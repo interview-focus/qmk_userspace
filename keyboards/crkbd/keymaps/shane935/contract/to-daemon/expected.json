@@ -242,6 +242,106 @@
         "event": 0,
         "eventArg": 0
       }
+    },
+    {
+      "file": "tree.bin",
+      "name": "TREE mode",
+      "why": "F21 opened choose-tree.",
+      "fields": {
+        "type": 2,
+        "seq": 16,
+        "ack": 51,
+        "intent": 0,
+        "intentArg": 0,
+        "nonce": 0,
+        "mode": 2,
+        "heldModifier": 0,
+        "baseLayer": 2,
+        "osOverride": false,
+        "hostAlive": true,
+        "event": 1
+      },
+      "key": { "row": 9, "shift": false, "ctrl": false, "alt": false }
+    },
+    {
+      "file": "window.bin",
+      "name": "WINDOW mode with MOVE held",
+      "why": "S-F22, swap-window left.",
+      "fields": {
+        "type": 2,
+        "seq": 17,
+        "ack": 52,
+        "intent": 0,
+        "intentArg": 0,
+        "nonce": 0,
+        "mode": 3,
+        "heldModifier": 3,
+        "baseLayer": 2,
+        "osOverride": false,
+        "hostAlive": true,
+        "event": 1
+      },
+      "key": { "row": 10, "shift": true, "ctrl": false, "alt": false }
+    },
+    {
+      "file": "within-word.bin",
+      "name": "WITHIN mode with WORD held",
+      "why": "The one held modifier no other case uses.",
+      "fields": {
+        "type": 2,
+        "seq": 18,
+        "ack": 53,
+        "intent": 0,
+        "intentArg": 0,
+        "nonce": 0,
+        "mode": 5,
+        "heldModifier": 5,
+        "baseLayer": 2,
+        "osOverride": false,
+        "hostAlive": true,
+        "event": 0,
+        "eventArg": 0
+      }
+    },
+    {
+      "file": "reserved.bin",
+      "name": "reserved mode, modifier and request id",
+      "why": "Mode 1, held modifier 4 and request 0x10, the start of the lower reserved range. Nothing sends them; the daemon keeps them rather than rejecting the report.",
+      "fields": {
+        "type": 2,
+        "seq": 19,
+        "ack": 54,
+        "intent": 16,
+        "intentArg": 0,
+        "nonce": 6,
+        "mode": 1,
+        "heldModifier": 4,
+        "baseLayer": 2,
+        "osOverride": false,
+        "hostAlive": true,
+        "event": 0,
+        "eventArg": 0
+      }
+    },
+    {
+      "file": "reserved-high.bin",
+      "name": "a request id at the top of the reserved range",
+      "why": "0x51, the end of the upper reserved range, kept like any other.",
+      "fields": {
+        "type": 2,
+        "seq": 20,
+        "ack": 55,
+        "intent": 81,
+        "intentArg": 0,
+        "nonce": 7,
+        "mode": 5,
+        "heldModifier": 0,
+        "baseLayer": 2,
+        "osOverride": false,
+        "hostAlive": true,
+        "event": 0,
+        "eventArg": 0
+      }
     }
   ]
 }

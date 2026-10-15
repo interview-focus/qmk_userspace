@@ -112,6 +112,43 @@ static const contract_case_t cases[] = {
         .why   = "Three reports missed: the keyboard says so, and has dropped back out of tmux mode.",
         .state = { .type = KB_STATE, .seq = 15, .ack = 50, .os = KB_OS_MAC },
     },
+    {
+        .file  = "tree",
+        .name  = "TREE mode",
+        .why   = "F21 opened choose-tree.",
+        .state = { .type = KB_STATE, .seq = 16, .ack = 51, .mode = KB_MODE_TREE, .os = KB_OS_MAC, .host_alive = true,
+                   .event = KB_EVENT_TMUX_KEY },
+        .key   = { 9, false, false, false },
+    },
+    {
+        .file  = "window",
+        .name  = "WINDOW mode with MOVE held",
+        .why   = "S-F22, swap-window left.",
+        .state = { .type = KB_STATE, .seq = 17, .ack = 52, .mode = KB_MODE_WINDOW, .mod = 3, .os = KB_OS_MAC, .host_alive = true,
+                   .event = KB_EVENT_TMUX_KEY },
+        .key   = { 10, true, false, false },
+    },
+    {
+        .file  = "within-word",
+        .name  = "WITHIN mode with WORD held",
+        .why   = "The one held modifier no other case uses.",
+        .state = { .type = KB_STATE, .seq = 18, .ack = 53, .mode = KB_MODE_WITHIN, .mod = 5, .os = KB_OS_MAC, .host_alive = true },
+    },
+    {
+        .file  = "reserved",
+        .name  = "reserved mode, modifier and request id",
+        .why   = "Mode 1, held modifier 4 and request 0x10, the start of the lower reserved range. Nothing sends them; the daemon keeps "
+                 "them rather than rejecting the report.",
+        .state = { .type = KB_STATE, .seq = 19, .ack = 54, .intent = 0x10, .nonce = 6, .mode = KB_MODE_TMUX, .mod = 4, .os = KB_OS_MAC,
+                   .host_alive = true },
+    },
+    {
+        .file  = "reserved-high",
+        .name  = "a request id at the top of the reserved range",
+        .why   = "0x51, the end of the upper reserved range, kept like any other.",
+        .state = { .type = KB_STATE, .seq = 20, .ack = 55, .intent = 0x51, .nonce = 7, .mode = KB_MODE_WITHIN, .os = KB_OS_MAC,
+                   .host_alive = true },
+    },
 };
 
 #define N_CASES (sizeof cases / sizeof cases[0])
