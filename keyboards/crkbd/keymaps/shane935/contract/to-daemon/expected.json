@@ -1,0 +1,247 @@
+{
+  "version": 2,
+  "reportSize": 32,
+  "note": "Messages the keyboard sends to the daemon. Each file is one report as it goes over the wire, written by kb_state_report; the daemon asserts its decoder reads these fields back out of it. Recorded with test/run.sh record.",
+  "messages": [
+    {
+      "file": "hello.bin",
+      "name": "hello",
+      "why": "The first message after connecting: nothing seen from the host yet, so ack is none and the host is not yet alive.",
+      "fields": {
+        "type": 1,
+        "seq": 0,
+        "ack": 255,
+        "intent": 0,
+        "intentArg": 0,
+        "nonce": 0,
+        "mode": 0,
+        "heldModifier": 0,
+        "baseLayer": 2,
+        "osOverride": false,
+        "hostAlive": false,
+        "event": 0,
+        "eventArg": 0
+      }
+    },
+    {
+      "file": "typical.bin",
+      "name": "typical",
+      "why": "PANE mode with RESIZE held, on mac, the host alive and acknowledged.",
+      "fields": {
+        "type": 2,
+        "seq": 7,
+        "ack": 42,
+        "intent": 0,
+        "intentArg": 0,
+        "nonce": 3,
+        "mode": 4,
+        "heldModifier": 1,
+        "baseLayer": 2,
+        "osOverride": false,
+        "hostAlive": true,
+        "event": 0,
+        "eventArg": 0
+      }
+    },
+    {
+      "file": "maximum.bin",
+      "name": "every field at its maximum",
+      "why": "Each field at the top of its range, so a field read as too narrow fails.",
+      "fields": {
+        "type": 2,
+        "seq": 255,
+        "ack": 255,
+        "intent": 22,
+        "intentArg": 255,
+        "nonce": 255,
+        "mode": 5,
+        "heldModifier": 6,
+        "baseLayer": 2,
+        "osOverride": true,
+        "hostAlive": true,
+        "event": 1
+      },
+      "key": { "row": 12, "shift": true, "ctrl": true, "alt": true }
+    },
+    {
+      "file": "minimum.bin",
+      "name": "every field at its minimum",
+      "why": "All zero apart from the type, so a field read from the wrong byte shows up as a stray value.",
+      "fields": {
+        "type": 2,
+        "seq": 0,
+        "ack": 0,
+        "intent": 0,
+        "intentArg": 0,
+        "nonce": 0,
+        "mode": 0,
+        "heldModifier": 0,
+        "baseLayer": 0,
+        "osOverride": false,
+        "hostAlive": false,
+        "event": 0,
+        "eventArg": 0
+      }
+    },
+    {
+      "file": "os-override.bin",
+      "name": "the base layer chosen on the keyboard",
+      "why": "Linux picked by hand while the host may say otherwise: the override bit shares a byte with the layer.",
+      "fields": {
+        "type": 2,
+        "seq": 8,
+        "ack": 43,
+        "intent": 0,
+        "intentArg": 0,
+        "nonce": 0,
+        "mode": 0,
+        "heldModifier": 0,
+        "baseLayer": 1,
+        "osOverride": true,
+        "hostAlive": true,
+        "event": 0,
+        "eventArg": 0
+      }
+    },
+    {
+      "file": "within-deep.bin",
+      "name": "a WITHIN_DEEP request",
+      "why": "Asks the host to scroll into Claude's transcript; the nonce is what the host echoes back.",
+      "fields": {
+        "type": 2,
+        "seq": 9,
+        "ack": 44,
+        "intent": 21,
+        "intentArg": 0,
+        "nonce": 4,
+        "mode": 5,
+        "heldModifier": 0,
+        "baseLayer": 2,
+        "osOverride": false,
+        "hostAlive": true,
+        "event": 0,
+        "eventArg": 0
+      }
+    },
+    {
+      "file": "within-open.bin",
+      "name": "a WITHIN_OPEN request",
+      "why": "Asks the host to open Claude's transcript viewer.",
+      "fields": {
+        "type": 2,
+        "seq": 10,
+        "ack": 45,
+        "intent": 22,
+        "intentArg": 0,
+        "nonce": 5,
+        "mode": 5,
+        "heldModifier": 0,
+        "baseLayer": 2,
+        "osOverride": false,
+        "hostAlive": true,
+        "event": 0,
+        "eventArg": 0
+      }
+    },
+    {
+      "file": "key-plain.bin",
+      "name": "a tmux key with no modifier",
+      "why": "F13, select-pane -L: the lowest row of the key table.",
+      "fields": {
+        "type": 2,
+        "seq": 11,
+        "ack": 46,
+        "intent": 0,
+        "intentArg": 0,
+        "nonce": 0,
+        "mode": 4,
+        "heldModifier": 0,
+        "baseLayer": 2,
+        "osOverride": false,
+        "hostAlive": true,
+        "event": 1
+      },
+      "key": { "row": 1, "shift": false, "ctrl": false, "alt": false }
+    },
+    {
+      "file": "key-shift.bin",
+      "name": "a tmux key with shift",
+      "why": "S-F18, next-layout.",
+      "fields": {
+        "type": 2,
+        "seq": 12,
+        "ack": 47,
+        "intent": 0,
+        "intentArg": 0,
+        "nonce": 0,
+        "mode": 4,
+        "heldModifier": 0,
+        "baseLayer": 2,
+        "osOverride": false,
+        "hostAlive": true,
+        "event": 1
+      },
+      "key": { "row": 6, "shift": true, "ctrl": false, "alt": false }
+    },
+    {
+      "file": "key-ctrl.bin",
+      "name": "a tmux key with ctrl",
+      "why": "C-F13, split-window with SPLIT held.",
+      "fields": {
+        "type": 2,
+        "seq": 13,
+        "ack": 48,
+        "intent": 0,
+        "intentArg": 0,
+        "nonce": 0,
+        "mode": 4,
+        "heldModifier": 2,
+        "baseLayer": 2,
+        "osOverride": false,
+        "hostAlive": true,
+        "event": 1
+      },
+      "key": { "row": 1, "shift": false, "ctrl": true, "alt": false }
+    },
+    {
+      "file": "key-alt.bin",
+      "name": "a tmux key with alt",
+      "why": "M-F16, swap-pane right with MOVE held.",
+      "fields": {
+        "type": 2,
+        "seq": 14,
+        "ack": 49,
+        "intent": 0,
+        "intentArg": 0,
+        "nonce": 0,
+        "mode": 4,
+        "heldModifier": 3,
+        "baseLayer": 2,
+        "osOverride": false,
+        "hostAlive": true,
+        "event": 1
+      },
+      "key": { "row": 4, "shift": false, "ctrl": false, "alt": true }
+    },
+    {
+      "file": "host-lost.bin",
+      "name": "the host given up on",
+      "why": "Three reports missed: the keyboard says so, and has dropped back out of tmux mode.",
+      "fields": {
+        "type": 2,
+        "seq": 15,
+        "ack": 50,
+        "intent": 0,
+        "intentArg": 0,
+        "nonce": 0,
+        "mode": 0,
+        "heldModifier": 0,
+        "baseLayer": 2,
+        "osOverride": false,
+        "hostAlive": false,
+        "event": 0,
+        "eventArg": 0
+      }
+    }
+  ]
+}
