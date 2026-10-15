@@ -12,6 +12,9 @@
 #   curl -sL -o /tmp/w.tar.gz https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz
 #   tar xzf /tmp/w.tar.gz -C /tmp
 #   WASI_SDK=/tmp/wasi-sdk-25.0-x86_64-linux test/run.sh
+#
+# It also checks contract/to-daemon/ still matches what kb_state_report emits.
+# `test/run.sh record` rewrites it, which is deliberate: see record_contract.c.
 set -e
 here=$(dirname "$0")
 root="$here/../../../../.."
@@ -25,8 +28,15 @@ if [ -n "$WASI_SDK" ]; then
     cat > "$tmp/run.mjs" <<'JS'
 import { WASI } from 'node:wasi';
 import { readFile } from 'node:fs/promises';
-const wasi = new WASI({ version: 'preview1', args: ['test'], env: {} });
-const mod = await WebAssembly.compile(await readFile(process.argv[2]));
+// An optional directory is opened as /out, the only path the program can reach.
+const [wasm, dir] = process.argv.slice(2);
+const wasi = new WASI({
+    version: 'preview1',
+    args: dir ? ['test', '/out'] : ['test'],
+    env: {},
+    preopens: dir ? { '/out': dir } : {},
+});
+const mod = await WebAssembly.compile(await readFile(wasm));
 process.exitCode = wasi.start(await WebAssembly.instantiate(mod, wasi.getImportObject()));
 JS
 fi
@@ -68,4 +78,27 @@ for t in "$here"/*_test.c; do
         "$tmp/$name" || status=1
     fi
 done
+contract="$here/../contract/to-daemon"
+out="$tmp/to-daemon"
+[ "$1" = record ] && out="$contract"
+rm -rf "$out"
+mkdir -p "$out"
+if [ -n "$WASI_SDK" ]; then
+    # shellcheck disable=SC2086
+    "$WASI_SDK/bin/clang" --target=wasm32-wasip1 $warn -o "$tmp/record_contract.wasm" "$here/record_contract.c" "$here/../kb_protocol.c"
+    node --no-warnings "$tmp/run.mjs" "$tmp/record_contract.wasm" "$out" || status=1
+else
+    # shellcheck disable=SC2086
+    "${CC:-cc}" $warn -o "$tmp/record_contract" "$here/record_contract.c" "$here/../kb_protocol.c"
+    "$tmp/record_contract" "$out" || status=1
+fi
+if [ "$1" = record ]; then
+    echo "contract: recorded to-daemon"
+elif diff -r "$contract" "$out"; then
+    echo "contract: to-daemon matches the encoder"
+else
+    echo "contract: to-daemon is stale; run test/run.sh record and explain the diff"
+    status=1
+fi
+
 exit $status
