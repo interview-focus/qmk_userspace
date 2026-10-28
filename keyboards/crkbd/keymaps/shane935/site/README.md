@@ -67,5 +67,7 @@ Three things stop the page quietly going stale:
    it catches "I edited the keymap and forgot to rebuild". Output is
    deterministic — there is no timestamp — so this is reliable.
 
-The footer prints the short hash of `keymap.c` the page was built from, so
-`sha256sum keymap.c` tells you whether it is current.
+The footer prints the short hashes of `keymap.c`, `kb_machine.c` and
+`annotations.mjs` the page was built from, so `sha256sum` on any of them tells
+you whether it is current. `kb_machine.c` is there because it holds what each
+custom key does: a change to it may need a change to `annotations.mjs`.
