@@ -18,6 +18,8 @@ import annotations from './annotations.mjs';
 const here = dirname(fileURLToPath(import.meta.url));
 
 const KEYMAP_C = resolve(here, '../keymap.c');
+// What each custom key does, which annotations.mjs describes by hand.
+const KB_MACHINE_C = resolve(here, '../kb_machine.c');
 const INFO_JSON = resolve(here, '../../../info.json');
 const TEMPLATE = resolve(here, 'template.html');
 const OUTPUT = resolve(here, 'index.html');
@@ -32,7 +34,7 @@ function readLayouts() {
     return info.layouts;
 }
 
-/** Short content hash, so you can tell whether the page matches keymap.c. */
+/** Short content hash, so you can tell whether the page matches its sources. */
 function shortHash(path) {
     return createHash('sha256').update(readFileSync(path)).digest('hex').slice(0, 12);
 }
@@ -55,6 +57,7 @@ function render() {
         // and it would lie about whether the content is current anyway.
         provenance: {
             keymap: shortHash(KEYMAP_C),
+            machine: shortHash(KB_MACHINE_C),
             annotations: shortHash(ANNOTATIONS),
         },
     };
@@ -92,7 +95,8 @@ function main(argv) {
         const current = readFileSync(OUTPUT, 'utf8');
         if (current !== html) {
             console.error(
-                'index.html is stale: it does not match keymap.c.\n' +
+                'index.html is stale: keymap.c, kb_machine.c or annotations.mjs changed.\n' +
+                '  If kb_machine.c changed what a key does, update annotations.mjs too.\n' +
                 "  run: node keyboards/crkbd/keymaps/shane935/site/build.mjs"
             );
             process.exit(1);

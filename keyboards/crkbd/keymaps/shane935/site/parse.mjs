@@ -5,6 +5,7 @@
 // what it expects and names the layer and key index when it doesn't hold.
 
 import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 
 class ParseError extends Error {
     constructor(message) {
@@ -58,12 +59,6 @@ function parseEnum(source, name) {
         const entry = raw.trim();
         if (entry === '') continue;
         if (entry.includes('=')) {
-            // custom_keycodes always starts at SAFE_RANGE; we only need the
-            // names from it, never the values.
-            if (name === 'custom_keycodes' && /=\s*SAFE_RANGE\s*$/.test(entry)) {
-                members.push(entry.split('=')[0].trim());
-                continue;
-            }
             fail(
                 `'enum ${name}' member '${entry}' has an explicit value; ` +
                 `indices would be guesses. Teach parse.mjs about it before continuing.`
@@ -77,6 +72,22 @@ function parseEnum(source, name) {
 
     if (members.length === 0) fail(`'enum ${name}' is empty`);
     return members;
+}
+
+// keymap.c numbers its custom keycodes from the KB_KEYS list in kb_machine.h,
+// so the names come from there, in order.
+function parseKbKeys(headerPath) {
+    const header = stripComments(readFileSync(headerPath, 'utf8'));
+    const start = header.indexOf('#define KB_KEYS(X)');
+    if (start === -1) fail(`could not find '#define KB_KEYS(X)' in ${headerPath}`);
+    const lines = [];
+    for (const line of header.slice(start).split('\n')) {
+        lines.push(line);
+        if (!line.trimEnd().endsWith('\\')) break;
+    }
+    const names = [...lines.join('\n').matchAll(/\bX\((\w+)\)/g)].map((m) => m[1]);
+    if (names.length === 0) fail('KB_KEYS lists no keys');
+    return names;
 }
 
 // Object-like #defines only. These are the M_SPC/L_ENT thumb aliases; we keep
@@ -147,7 +158,8 @@ export function parseKeymap(keymapPath, knownLayouts) {
     const source = stripComments(readFileSync(keymapPath, 'utf8'));
 
     const layerNames = parseEnum(source, 'layers');
-    const customKeycodes = parseEnum(source, 'custom_keycodes');
+    if (!source.includes('KB_KEYS(KB_KEYCODE)')) fail("'enum custom_keycodes' no longer comes from KB_KEYS");
+    const customKeycodes = parseKbKeys(join(dirname(keymapPath), 'kb_machine.h'));
     const defines = parseDefines(source);
 
     // Slice out just the keymaps[] initialiser, so nothing below it (the

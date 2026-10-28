@@ -11,8 +11,9 @@ RAW_ENABLE = yes
 LTO_ENABLE = yes
 MOUSEKEY_ENABLE = no
 
-# The wire format, kept out of keymap.c so it can be built and tested without
-# QMK. test/run.sh does exactly that.
+# Everything that needs no QMK, kept out of keymap.c so it can be built and
+# tested without it. test/run.sh does exactly that.
 SRC += kb_protocol.c
 SRC += tmux_context.c
 SRC += kb_rules.c
+SRC += kb_machine.c

@@ -1,6 +1,7 @@
 #!/bin/sh
 # Builds and runs the unit tests for the pure parts of this keymap: kb_protocol.c
-# (the wire format) and tmux_context.c (what WITHIN mode sends). Neither calls
+# (the wire format), tmux_context.c (what WITHIN mode sends), kb_rules.c and
+# kb_machine.c (the keyboard's state and its side of the link). None of them calls
 # into QMK -- tmux_context.c includes QMK's keycode headers, which are enums and
 # macros only -- so this needs a C compiler and nothing else: no QMK build, no
 # toolchain, no keyboard.
@@ -13,7 +14,9 @@
 #   tar xzf /tmp/w.tar.gz -C /tmp
 #   WASI_SDK=/tmp/wasi-sdk-25.0-x86_64-linux test/run.sh
 #
-# It also checks contract/to-daemon/ still matches what kb_state_report emits.
+# It also checks contract/to-daemon/ still matches what the keyboard sends: single
+# reports from kb_state_report, and whole conversations replayed through
+# kb_machine.c.
 # `test/run.sh record` rewrites it, which is deliberate: see record_contract.c.
 #
 # With KEYBOARD_DAEMON pointing at a checkout of keyboard-daemon, it also checks
@@ -51,7 +54,7 @@ status=0
 # keymap.c cannot be compiled without QMK, but its preprocessor directives can
 # be checked without it, and an #ifdef that loses its #else is exactly the kind
 # of break that survives a careful read. All four combinations, because the
-# RAW_ENABLE-off branch defines send_state as a macro and is never built here.
+# RAW_ENABLE-off and OLED_ENABLE-off branches are never built here.
 cc_pp="${CC:-cc}"
 pp_target=""
 if [ -n "$WASI_SDK" ]; then
@@ -73,13 +76,16 @@ done
 
 for t in "$here"/*_test.c; do
     name=$(basename "$t" .c)
+    # kb_machine.c calls kb_io_ functions that only its own test defines.
+    extra=""
+    [ "$name" = kb_machine_test ] && extra="$here/../kb_machine.c"
     if [ -n "$WASI_SDK" ]; then
         # shellcheck disable=SC2086
-        "$WASI_SDK/bin/clang" --target=wasm32-wasip1 $warn $inc -o "$tmp/$name.wasm" "$t" $srcs
+        "$WASI_SDK/bin/clang" --target=wasm32-wasip1 $warn $inc -o "$tmp/$name.wasm" "$t" $srcs $extra
         node --no-warnings "$tmp/run.mjs" "$tmp/$name.wasm" || status=1
     else
         # shellcheck disable=SC2086
-        "${CC:-cc}" $warn $inc -o "$tmp/$name" "$t" $srcs
+        "${CC:-cc}" $warn $inc -o "$tmp/$name" "$t" $srcs $extra
         "$tmp/$name" || status=1
     fi
 done
@@ -90,17 +96,17 @@ rm -rf "$out"
 mkdir -p "$out"
 if [ -n "$WASI_SDK" ]; then
     # shellcheck disable=SC2086
-    "$WASI_SDK/bin/clang" --target=wasm32-wasip1 $warn -o "$tmp/record_contract.wasm" "$here/record_contract.c" "$here/../kb_protocol.c"
+    "$WASI_SDK/bin/clang" --target=wasm32-wasip1 $warn $inc -o "$tmp/record_contract.wasm" "$here/record_contract.c" $srcs "$here/../kb_machine.c"
     node --no-warnings "$tmp/run.mjs" "$tmp/record_contract.wasm" "$out" || status=1
 else
     # shellcheck disable=SC2086
-    "${CC:-cc}" $warn -o "$tmp/record_contract" "$here/record_contract.c" "$here/../kb_protocol.c"
+    "${CC:-cc}" $warn $inc -o "$tmp/record_contract" "$here/record_contract.c" $srcs "$here/../kb_machine.c"
     "$tmp/record_contract" "$out" || status=1
 fi
 if [ "$1" = record ]; then
     echo "contract: recorded to-daemon"
 elif diff -r "$contract" "$out"; then
-    echo "contract: to-daemon matches the encoder"
+    echo "contract: to-daemon matches what the keyboard sends"
 else
     echo "contract: to-daemon is stale; run test/run.sh record and explain the diff"
     status=1

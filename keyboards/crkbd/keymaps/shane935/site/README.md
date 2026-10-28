@@ -23,8 +23,8 @@ hold-Control, `_______` is resolved to the key it actually falls through to,
 and the Mac-versus-Linux differences are computed by diffing the layer pairs.
 
 What the array does **not** encode is written by hand in `annotations.mjs`:
-every custom keycode (they are cases in `process_record_user`, and the array
-shows only the name), the both-shifts Caps Word chord (it lives in `config.h`
+every custom keycode (they are cases in `kb_key` in `kb_machine.c`, and the
+array shows only the name), the both-shifts Caps Word chord (it lives in `config.h`
 and has no array entry at all), the 200 ms tapping term, and tmux mode being a
 toggle rather than a hold. Edit that file when the behaviour changes.
 
@@ -67,5 +67,7 @@ Three things stop the page quietly going stale:
    it catches "I edited the keymap and forgot to rebuild". Output is
    deterministic — there is no timestamp — so this is reliable.
 
-The footer prints the short hash of `keymap.c` the page was built from, so
-`sha256sum keymap.c` tells you whether it is current.
+The footer prints the short hashes of `keymap.c`, `kb_machine.c` and
+`annotations.mjs` the page was built from, so `sha256sum` on any of them tells
+you whether it is current. `kb_machine.c` is there because it holds what each
+custom key does: a change to it may need a change to `annotations.mjs`.

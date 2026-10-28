@@ -454,7 +454,8 @@ function renderFooter() {
     .map((c) => `<span style="--kc: var(--c-${c})">${c.replace(/-/g, ' ')}</span>`).join('');
 
   $('prov').textContent =
-    `Generated from keymap.c @ ${DATA.provenance.keymap} and annotations.mjs @ ` +
+    `Generated from keymap.c @ ${DATA.provenance.keymap}, kb_machine.c @ ` +
+    `${DATA.provenance.machine} and annotations.mjs @ ` +
     `${DATA.provenance.annotations}. Rebuild with: node site/build.mjs`;
 }
 

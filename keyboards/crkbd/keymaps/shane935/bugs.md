@@ -19,19 +19,20 @@ a letter into a live prompt, and that guarantee holds only while the host is
 alive: pull the cable and WORD+← types a `b` into the message box. `q` is still
 unreachable from any column, so hunk cannot be quit.
 
-**Fix:** in `raw_hid_receive`, notice the alive→dead edge and re-run
-`within_send(WK_ENTER)` while `tmux_mode == _TMUX_WITHIN`. That opens copy mode
-for real and makes the offline column honest. Needs a flag for the previous
-liveness, since `host_alive()` is computed rather than stored, and liveness goes
-stale by a timer rather than by a report — so the edge has to be checked
-somewhere that runs without one, probably `housekeeping_task_user`.
+**Fix:** notice the alive→dead edge and re-run `within_send(WK_ENTER)` while
+`kb.mode == KB_MODE_WITHIN`. That opens copy mode for real and makes the offline
+column honest. Needs a flag for the previous liveness, since `kb_alive()` is
+computed rather than stored. Liveness goes stale on a timer, not on a report,
+so `kb_receive` never sees the edge: it needs a new `kb_tick` in
+`kb_machine.c`, called from `housekeeping_task_user`. `kb_machine_test.c` can
+drive it by moving its clock.
 
 ## A base layer the host moved is not reported until the next keypress
 
 STATE is sent "on every change to an owned field", and byte 10, the base layer,
 is one the keyboard owns. `kb_apply_os` runs on every CONTEXT and can move the
 layer, but nothing after it sends STATE: the only STATE leaving
-`raw_hid_receive` is the stale-ack resend, and a steady-state CONTEXT acks the
+`kb_receive` is the stale-ack resend, and a steady-state CONTEXT acks the
 current seq, so that does not fire.
 
 It shows whenever the host's reported `os` changes while the source is
@@ -47,8 +48,7 @@ never sees it. Only a host that mirrors the byte — which is what the protocol
 tells it to do — lags.
 
 **Fix:** return from `kb_apply_os` whether it moved the layer, and send STATE for
-it in `raw_hid_receive`. The caller has to do that rather than `kb_apply_os`
-itself, because OS_SWAP already sends unconditionally and has to keep doing so:
-tapping off Follow changes byte 10's bit 7 even when the layer stays put. It
-lands in `raw_hid_receive`, which no test reaches, so only a flashed board can
-confirm it.
+it in `kb_receive`. The caller has to do that rather than `kb_apply_os` itself,
+because OS_SWAP already sends unconditionally and has to keep doing so: tapping
+off Follow changes byte 10's bit 7 even when the layer stays put. A test in
+`kb_machine_test.c` can pin it: `test_follow_os` already sees the layer move.
