@@ -161,7 +161,8 @@ void kb_receive(const uint8_t *data, uint8_t length);
 
 // Defined by whoever links this file.
 uint32_t kb_io_now_ms(void);
-void     kb_io_send(const uint8_t report[KB_REPORT_SIZE]);
+// The report as it goes over the wire, and the values it was built from.
+void     kb_io_send(const uint8_t report[KB_REPORT_SIZE], const kb_state_t *state);
 // The mode layers for a KB_MODE_ value, KB_MODE_OFF turning them all off.
 void kb_io_set_mode_layers(uint8_t mode);
 // A row of the tmux key table: fkey with the MOD_ bits held in the same report.

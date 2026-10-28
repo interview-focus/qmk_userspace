@@ -205,7 +205,8 @@ uint32_t kb_io_now_ms(void) {
     return timer_read32();
 }
 
-void kb_io_send(const uint8_t report[KB_REPORT_SIZE]) {
+void kb_io_send(const uint8_t report[KB_REPORT_SIZE], const kb_state_t *state) {
+    (void)state;
 #ifdef RAW_ENABLE
     raw_hid_send((uint8_t *)report, KB_REPORT_SIZE);
 #else

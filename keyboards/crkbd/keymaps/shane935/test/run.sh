@@ -14,7 +14,9 @@
 #   tar xzf /tmp/w.tar.gz -C /tmp
 #   WASI_SDK=/tmp/wasi-sdk-25.0-x86_64-linux test/run.sh
 #
-# It also checks contract/to-daemon/ still matches what kb_state_report emits.
+# It also checks contract/to-daemon/ still matches what the keyboard sends: single
+# reports from kb_state_report, and whole conversations replayed through
+# kb_machine.c.
 # `test/run.sh record` rewrites it, which is deliberate: see record_contract.c.
 #
 # With KEYBOARD_DAEMON pointing at a checkout of keyboard-daemon, it also checks
@@ -94,17 +96,17 @@ rm -rf "$out"
 mkdir -p "$out"
 if [ -n "$WASI_SDK" ]; then
     # shellcheck disable=SC2086
-    "$WASI_SDK/bin/clang" --target=wasm32-wasip1 $warn -o "$tmp/record_contract.wasm" "$here/record_contract.c" "$here/../kb_protocol.c"
+    "$WASI_SDK/bin/clang" --target=wasm32-wasip1 $warn $inc -o "$tmp/record_contract.wasm" "$here/record_contract.c" $srcs "$here/../kb_machine.c"
     node --no-warnings "$tmp/run.mjs" "$tmp/record_contract.wasm" "$out" || status=1
 else
     # shellcheck disable=SC2086
-    "${CC:-cc}" $warn -o "$tmp/record_contract" "$here/record_contract.c" "$here/../kb_protocol.c"
+    "${CC:-cc}" $warn $inc -o "$tmp/record_contract" "$here/record_contract.c" $srcs "$here/../kb_machine.c"
     "$tmp/record_contract" "$out" || status=1
 fi
 if [ "$1" = record ]; then
     echo "contract: recorded to-daemon"
 elif diff -r "$contract" "$out"; then
-    echo "contract: to-daemon matches the encoder"
+    echo "contract: to-daemon matches what the keyboard sends"
 else
     echo "contract: to-daemon is stale; run test/run.sh record and explain the diff"
     status=1

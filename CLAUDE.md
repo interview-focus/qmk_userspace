@@ -65,8 +65,11 @@ wasi-sdk and `run.sh` builds for wasm32-wasip1 and runs under node instead; the
 fetch command is in the script's header.
 
 `contract/` is the agreement with keyboard-daemon. `to-daemon/` is what this
-keyboard sends, and `run.sh` fails if it no longer matches the encoder;
-`run.sh record` rewrites it. Set `KEYBOARD_DAEMON` to a keyboard-daemon
+keyboard sends: `expected.json` holds single reports covering each field's
+range, and `interactions.json` holds whole conversations replayed through
+`kb_machine.c`, with every STATE and tmux key-table row they sent. Both are
+chosen by hand in `test/record_contract.c`. `run.sh` fails if either no longer
+matches what the code sends; `run.sh record` rewrites them. Set `KEYBOARD_DAEMON` to a keyboard-daemon
 checkout and `run.sh` also parses that repo's `contract/to-keyboard/`;
 `to-keyboard.verified` notes which daemon contract last passed, and `record`
 updates it. QMK's root `.gitignore` drops `*.bin`, and `contract/.gitignore`

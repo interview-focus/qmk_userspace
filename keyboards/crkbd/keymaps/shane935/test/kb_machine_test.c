@@ -55,7 +55,8 @@ uint32_t kb_io_now_ms(void) {
     return now_ms;
 }
 
-void kb_io_send(const uint8_t report[KB_REPORT_SIZE]) {
+void kb_io_send(const uint8_t report[KB_REPORT_SIZE], const kb_state_t *state) {
+    (void)state;
     record(CALL_SEND, 0, report);
 }
 

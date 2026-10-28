@@ -68,7 +68,7 @@ static void send_state_msg(uint8_t type, uint8_t intent, uint8_t arg) {
     };
     uint8_t report[KB_REPORT_SIZE];
     kb_state_report(report, &state);
-    kb_io_send(report);
+    kb_io_send(report, &state);
     kb.event     = KB_EVENT_NONE;
     kb.event_arg = 0;
 }

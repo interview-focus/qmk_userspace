@@ -1,0 +1,232 @@
+{
+  "version": 2,
+  "reportSize": 32,
+  "note": "Conversations, each replayed through the keyboard's own state machine, kb_machine.c. steps is what happened: connect, a CONTEXT from the host (its fields as the daemon names them), a key pressed, held or released, or time passing. sent is everything that reached the host, in order: each STATE, at index report in the interaction's .bin, and each row of the tmux key table. Keystrokes for the program in the pane are not included. The keyboard starts on mac each time. Recorded with test/run.sh record.",
+  "interactions": [
+    {
+      "file": "interactions/connect.bin",
+      "name": "connecting",
+      "why": "HELLO, then a CONTEXT sent before the host saw it, which the keyboard answers with a STATE, then one that acks it.",
+      "steps": [
+        { "do": "connect" },
+        { "do": "context", "fields": { "seq": 1, "ack": 255, "os": 2, "program": 1, "tmuxBits": 3, "transcript": 0, "phase": 0, "perm": 0, "intentNonce": 0, "intentStatus": 0, "window": 0, "pane": 0, "label": "" } },
+        { "do": "context", "fields": { "seq": 2, "ack": 2, "os": 2, "program": 1, "tmuxBits": 3, "transcript": 0, "phase": 0, "perm": 0, "intentNonce": 0, "intentStatus": 0, "window": 0, "pane": 0, "label": "" } }
+      ],
+      "sent": [
+        { "step": 0, "report": 0, "fields": { "type": 1, "seq": 1, "ack": 255, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 0, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": false, "event": 0, "eventArg": 0 } },
+        { "step": 1, "report": 1, "fields": { "type": 2, "seq": 2, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 0, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } }
+      ]
+    },
+    {
+      "file": "interactions/pane-thumbs.bin",
+      "name": "resize, split and swap a pane",
+      "why": "Each PANE thumb held over an arrow: the held modifier is reported on press and release, and rides on the row.",
+      "steps": [
+        { "do": "connect" },
+        { "do": "context", "fields": { "seq": 1, "ack": 1, "os": 2, "program": 1, "tmuxBits": 3, "transcript": 0, "phase": 0, "perm": 0, "intentNonce": 0, "intentStatus": 0, "window": 0, "pane": 0, "label": "" } },
+        { "do": "press", "key": "TMUX_ON" },
+        { "do": "hold", "key": "TP_RSZE" },
+        { "do": "press", "key": "TP_UP" },
+        { "do": "release", "key": "TP_RSZE" },
+        { "do": "hold", "key": "TP_SPLT" },
+        { "do": "press", "key": "TP_RGHT" },
+        { "do": "release", "key": "TP_SPLT" },
+        { "do": "hold", "key": "TP_MOVE" },
+        { "do": "press", "key": "TP_LEFT" },
+        { "do": "release", "key": "TP_MOVE" }
+      ],
+      "sent": [
+        { "step": 0, "report": 0, "fields": { "type": 1, "seq": 1, "ack": 255, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 0, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": false, "event": 0, "eventArg": 0 } },
+        { "step": 2, "report": 1, "fields": { "type": 2, "seq": 2, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 3, "report": 2, "fields": { "type": 2, "seq": 3, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 1, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 4, "tmuxKey": "S-F15" },
+        { "step": 4, "report": 3, "fields": { "type": 2, "seq": 4, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 1, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 1 }, "key": { "row": 3, "shift": true, "ctrl": false, "alt": false } },
+        { "step": 5, "report": 4, "fields": { "type": 2, "seq": 5, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 6, "report": 5, "fields": { "type": 2, "seq": 6, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 2, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 7, "tmuxKey": "C-F16" },
+        { "step": 7, "report": 6, "fields": { "type": 2, "seq": 7, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 2, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 1 }, "key": { "row": 4, "shift": false, "ctrl": true, "alt": false } },
+        { "step": 8, "report": 7, "fields": { "type": 2, "seq": 8, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 9, "report": 8, "fields": { "type": 2, "seq": 9, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 3, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 10, "tmuxKey": "M-F13" },
+        { "step": 10, "report": 9, "fields": { "type": 2, "seq": 10, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 3, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 1 }, "key": { "row": 1, "shift": false, "ctrl": false, "alt": true } },
+        { "step": 11, "report": 10, "fields": { "type": 2, "seq": 11, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } }
+      ]
+    },
+    {
+      "file": "interactions/tree.bin",
+      "name": "choose from the tree",
+      "why": "TREE opens choose-tree with F21; choosing closes it, which the keyboard reports as PANE.",
+      "steps": [
+        { "do": "connect" },
+        { "do": "context", "fields": { "seq": 1, "ack": 1, "os": 2, "program": 1, "tmuxBits": 3, "transcript": 0, "phase": 0, "perm": 0, "intentNonce": 0, "intentStatus": 0, "window": 0, "pane": 0, "label": "" } },
+        { "do": "press", "key": "TMUX_ON" },
+        { "do": "press", "key": "TM_TREE" },
+        { "do": "press", "key": "TT_SEL" }
+      ],
+      "sent": [
+        { "step": 0, "report": 0, "fields": { "type": 1, "seq": 1, "ack": 255, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 0, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": false, "event": 0, "eventArg": 0 } },
+        { "step": 2, "report": 1, "fields": { "type": 2, "seq": 2, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 3, "report": 2, "fields": { "type": 2, "seq": 3, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 2, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 3, "tmuxKey": "F21" },
+        { "step": 3, "report": 3, "fields": { "type": 2, "seq": 4, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 2, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 1 }, "key": { "row": 9, "shift": false, "ctrl": false, "alt": false } },
+        { "step": 4, "report": 4, "fields": { "type": 2, "seq": 5, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } }
+      ]
+    },
+    {
+      "file": "interactions/window.bin",
+      "name": "move a window, then go to the last one",
+      "why": "WINDOW with MOVE held swaps rather than selects; up is dead while MOVE is held, so it sends nothing.",
+      "steps": [
+        { "do": "connect" },
+        { "do": "context", "fields": { "seq": 1, "ack": 1, "os": 2, "program": 1, "tmuxBits": 3, "transcript": 0, "phase": 0, "perm": 0, "intentNonce": 0, "intentStatus": 0, "window": 0, "pane": 0, "label": "" } },
+        { "do": "press", "key": "TMUX_ON" },
+        { "do": "press", "key": "TM_WIN" },
+        { "do": "hold", "key": "TW_MOVE" },
+        { "do": "press", "key": "TW_LEFT" },
+        { "do": "press", "key": "TW_UP" },
+        { "do": "release", "key": "TW_MOVE" },
+        { "do": "press", "key": "TW_LAST" }
+      ],
+      "sent": [
+        { "step": 0, "report": 0, "fields": { "type": 1, "seq": 1, "ack": 255, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 0, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": false, "event": 0, "eventArg": 0 } },
+        { "step": 2, "report": 1, "fields": { "type": 2, "seq": 2, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 3, "report": 2, "fields": { "type": 2, "seq": 3, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 3, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 4, "report": 3, "fields": { "type": 2, "seq": 4, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 3, "heldModifier": 3, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 5, "tmuxKey": "S-F22" },
+        { "step": 5, "report": 4, "fields": { "type": 2, "seq": 5, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 3, "heldModifier": 3, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 1 }, "key": { "row": 10, "shift": true, "ctrl": false, "alt": false } },
+        { "step": 7, "report": 5, "fields": { "type": 2, "seq": 6, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 3, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 8, "tmuxKey": "S-F21" },
+        { "step": 8, "report": 6, "fields": { "type": 2, "seq": 7, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 3, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 1 }, "key": { "row": 9, "shift": true, "ctrl": false, "alt": false } }
+      ]
+    },
+    {
+      "file": "interactions/claude-viewer.bin",
+      "name": "open Claude's viewer, then ask for the whole conversation",
+      "why": "Two intents, each with its own nonce, answered done and then failed by the host.",
+      "steps": [
+        { "do": "connect" },
+        { "do": "context", "fields": { "seq": 1, "ack": 1, "os": 2, "program": 2, "tmuxBits": 3, "transcript": 1, "phase": 0, "perm": 0, "intentNonce": 0, "intentStatus": 0, "window": 0, "pane": 0, "label": "" } },
+        { "do": "press", "key": "TMUX_ON" },
+        { "do": "press", "key": "TM_WITHIN" },
+        { "do": "context", "fields": { "seq": 2, "ack": 4, "os": 2, "program": 2, "tmuxBits": 3, "transcript": 1, "phase": 0, "perm": 0, "intentNonce": 1, "intentStatus": 1, "window": 0, "pane": 0, "label": "" } },
+        { "do": "context", "fields": { "seq": 3, "ack": 4, "os": 2, "program": 2, "tmuxBits": 3, "transcript": 2, "phase": 0, "perm": 0, "intentNonce": 1, "intentStatus": 2, "window": 0, "pane": 0, "label": "" } },
+        { "do": "press", "key": "TM_WITHIN" },
+        { "do": "context", "fields": { "seq": 4, "ack": 7, "os": 2, "program": 2, "tmuxBits": 3, "transcript": 2, "phase": 0, "perm": 0, "intentNonce": 2, "intentStatus": 3, "window": 0, "pane": 0, "label": "" } }
+      ],
+      "sent": [
+        { "step": 0, "report": 0, "fields": { "type": 1, "seq": 1, "ack": 255, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 0, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": false, "event": 0, "eventArg": 0 } },
+        { "step": 2, "report": 1, "fields": { "type": 2, "seq": 2, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 3, "report": 2, "fields": { "type": 2, "seq": 3, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 5, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 3, "report": 3, "fields": { "type": 2, "seq": 4, "ack": 1, "intent": 22, "intentArg": 0, "nonce": 1, "mode": 5, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 6, "tmuxKey": "F20" },
+        { "step": 6, "report": 4, "fields": { "type": 2, "seq": 5, "ack": 3, "intent": 0, "intentArg": 0, "nonce": 1, "mode": 5, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 1 }, "key": { "row": 8, "shift": false, "ctrl": false, "alt": false } },
+        { "step": 6, "report": 5, "fields": { "type": 2, "seq": 6, "ack": 3, "intent": 0, "intentArg": 0, "nonce": 1, "mode": 5, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 6, "report": 6, "fields": { "type": 2, "seq": 7, "ack": 3, "intent": 21, "intentArg": 0, "nonce": 2, "mode": 5, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } }
+      ]
+    },
+    {
+      "file": "interactions/copy-paste.bin",
+      "name": "select a word in copy mode and paste it",
+      "why": "WITHIN on a shell opens copy mode with F19; WORD is reported while held; paste leaves copy mode and tmux mode.",
+      "steps": [
+        { "do": "connect" },
+        { "do": "context", "fields": { "seq": 1, "ack": 1, "os": 2, "program": 1, "tmuxBits": 3, "transcript": 0, "phase": 0, "perm": 0, "intentNonce": 0, "intentStatus": 0, "window": 0, "pane": 0, "label": "" } },
+        { "do": "press", "key": "TMUX_ON" },
+        { "do": "press", "key": "TM_WITHIN" },
+        { "do": "context", "fields": { "seq": 2, "ack": 4, "os": 2, "program": 1, "tmuxBits": 7, "transcript": 0, "phase": 0, "perm": 0, "intentNonce": 0, "intentStatus": 0, "window": 0, "pane": 0, "label": "" } },
+        { "do": "hold", "key": "TC_WORD" },
+        { "do": "press", "key": "TC_LEFT" },
+        { "do": "release", "key": "TC_WORD" },
+        { "do": "press", "key": "TC_PSTE" }
+      ],
+      "sent": [
+        { "step": 0, "report": 0, "fields": { "type": 1, "seq": 1, "ack": 255, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 0, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": false, "event": 0, "eventArg": 0 } },
+        { "step": 2, "report": 1, "fields": { "type": 2, "seq": 2, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 3, "report": 2, "fields": { "type": 2, "seq": 3, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 5, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 3, "tmuxKey": "F19" },
+        { "step": 3, "report": 3, "fields": { "type": 2, "seq": 4, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 5, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 1 }, "key": { "row": 7, "shift": false, "ctrl": false, "alt": false } },
+        { "step": 5, "report": 4, "fields": { "type": 2, "seq": 5, "ack": 2, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 5, "heldModifier": 5, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 7, "report": 5, "fields": { "type": 2, "seq": 6, "ack": 2, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 5, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 8, "tmuxKey": "F20" },
+        { "step": 8, "report": 6, "fields": { "type": 2, "seq": 7, "ack": 2, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 5, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 1 }, "key": { "row": 8, "shift": false, "ctrl": false, "alt": false } },
+        { "step": 8, "tmuxKey": "C-F22" },
+        { "step": 8, "report": 7, "fields": { "type": 2, "seq": 8, "ack": 2, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 5, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 1 }, "key": { "row": 10, "shift": false, "ctrl": true, "alt": false } },
+        { "step": 8, "report": 8, "fields": { "type": 2, "seq": 9, "ack": 2, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 0, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } }
+      ]
+    },
+    {
+      "file": "interactions/pane-closed.bin",
+      "name": "the tree closed behind the keyboard",
+      "why": "The host reports no mode open while the keyboard is in TREE with nothing in flight, so the keyboard adopts PANE.",
+      "steps": [
+        { "do": "connect" },
+        { "do": "context", "fields": { "seq": 1, "ack": 1, "os": 2, "program": 1, "tmuxBits": 3, "transcript": 0, "phase": 0, "perm": 0, "intentNonce": 0, "intentStatus": 0, "window": 0, "pane": 0, "label": "" } },
+        { "do": "press", "key": "TMUX_ON" },
+        { "do": "press", "key": "TM_TREE" },
+        { "do": "context", "fields": { "seq": 2, "ack": 4, "os": 2, "program": 1, "tmuxBits": 3, "transcript": 0, "phase": 0, "perm": 0, "intentNonce": 0, "intentStatus": 0, "window": 0, "pane": 0, "label": "" } }
+      ],
+      "sent": [
+        { "step": 0, "report": 0, "fields": { "type": 1, "seq": 1, "ack": 255, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 0, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": false, "event": 0, "eventArg": 0 } },
+        { "step": 2, "report": 1, "fields": { "type": 2, "seq": 2, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 3, "report": 2, "fields": { "type": 2, "seq": 3, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 2, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 3, "tmuxKey": "F21" },
+        { "step": 3, "report": 3, "fields": { "type": 2, "seq": 4, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 2, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 1 }, "key": { "row": 9, "shift": false, "ctrl": false, "alt": false } },
+        { "step": 4, "report": 4, "fields": { "type": 2, "seq": 5, "ack": 2, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } }
+      ]
+    },
+    {
+      "file": "interactions/host-lost.bin",
+      "name": "the host goes quiet",
+      "why": "No CONTEXT for 1.5 s: the next STATE says the host is not alive.",
+      "steps": [
+        { "do": "connect" },
+        { "do": "context", "fields": { "seq": 1, "ack": 1, "os": 2, "program": 1, "tmuxBits": 3, "transcript": 0, "phase": 0, "perm": 0, "intentNonce": 0, "intentStatus": 0, "window": 0, "pane": 0, "label": "" } },
+        { "do": "press", "key": "TMUX_ON" },
+        { "do": "wait", "ms": 1500 },
+        { "do": "press", "key": "TP_LAST" }
+      ],
+      "sent": [
+        { "step": 0, "report": 0, "fields": { "type": 1, "seq": 1, "ack": 255, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 0, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": false, "event": 0, "eventArg": 0 } },
+        { "step": 2, "report": 1, "fields": { "type": 2, "seq": 2, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 4, "tmuxKey": "F17" },
+        { "step": 4, "report": 2, "fields": { "type": 2, "seq": 3, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": false, "event": 1 }, "key": { "row": 5, "shift": false, "ctrl": false, "alt": false } }
+      ]
+    },
+    {
+      "file": "interactions/os-key.bin",
+      "name": "follow the host, then force each OS, then follow again",
+      "why": "The host says linux on a keyboard that came up on mac. Following it moves the layer but sends nothing until the next STATE: see bugs.md.",
+      "steps": [
+        { "do": "connect" },
+        { "do": "context", "fields": { "seq": 1, "ack": 1, "os": 1, "program": 1, "tmuxBits": 3, "transcript": 0, "phase": 0, "perm": 0, "intentNonce": 0, "intentStatus": 0, "window": 0, "pane": 0, "label": "" } },
+        { "do": "press", "key": "OS_SWAP" },
+        { "do": "press", "key": "OS_SWAP" },
+        { "do": "press", "key": "OS_SWAP" }
+      ],
+      "sent": [
+        { "step": 0, "report": 0, "fields": { "type": 1, "seq": 1, "ack": 255, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 0, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": false, "event": 0, "eventArg": 0 } },
+        { "step": 2, "report": 1, "fields": { "type": 2, "seq": 2, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 0, "heldModifier": 0, "baseLayer": 2, "osOverride": true, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 3, "report": 2, "fields": { "type": 2, "seq": 3, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 0, "heldModifier": 0, "baseLayer": 1, "osOverride": true, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 4, "report": 3, "fields": { "type": 2, "seq": 4, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 0, "heldModifier": 0, "baseLayer": 1, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } }
+      ]
+    },
+    {
+      "file": "interactions/detach.bin",
+      "name": "detach",
+      "why": "C-F17 detaches the client, and the keyboard leaves tmux mode.",
+      "steps": [
+        { "do": "connect" },
+        { "do": "context", "fields": { "seq": 1, "ack": 1, "os": 2, "program": 1, "tmuxBits": 3, "transcript": 0, "phase": 0, "perm": 0, "intentNonce": 0, "intentStatus": 0, "window": 0, "pane": 0, "label": "" } },
+        { "do": "press", "key": "TMUX_ON" },
+        { "do": "press", "key": "TM_DTCH" }
+      ],
+      "sent": [
+        { "step": 0, "report": 0, "fields": { "type": 1, "seq": 1, "ack": 255, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 0, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": false, "event": 0, "eventArg": 0 } },
+        { "step": 2, "report": 1, "fields": { "type": 2, "seq": 2, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
+        { "step": 3, "tmuxKey": "C-F17" },
+        { "step": 3, "report": 2, "fields": { "type": 2, "seq": 3, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 1 }, "key": { "row": 5, "shift": false, "ctrl": true, "alt": false } },
+        { "step": 3, "report": 3, "fields": { "type": 2, "seq": 4, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 0, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } }
+      ]
+    }
+  ]
+}
