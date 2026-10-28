@@ -1,6 +1,7 @@
 #!/bin/sh
 # Builds and runs the unit tests for the pure parts of this keymap: kb_protocol.c
-# (the wire format) and tmux_context.c (what WITHIN mode sends). Neither calls
+# (the wire format), tmux_context.c (what WITHIN mode sends), kb_rules.c and
+# kb_machine.c (the keyboard's state and its side of the link). None of them calls
 # into QMK -- tmux_context.c includes QMK's keycode headers, which are enums and
 # macros only -- so this needs a C compiler and nothing else: no QMK build, no
 # toolchain, no keyboard.
@@ -73,13 +74,16 @@ done
 
 for t in "$here"/*_test.c; do
     name=$(basename "$t" .c)
+    # kb_machine.c calls kb_io_ functions that only its own test defines.
+    extra=""
+    [ "$name" = kb_machine_test ] && extra="$here/../kb_machine.c"
     if [ -n "$WASI_SDK" ]; then
         # shellcheck disable=SC2086
-        "$WASI_SDK/bin/clang" --target=wasm32-wasip1 $warn $inc -o "$tmp/$name.wasm" "$t" $srcs
+        "$WASI_SDK/bin/clang" --target=wasm32-wasip1 $warn $inc -o "$tmp/$name.wasm" "$t" $srcs $extra
         node --no-warnings "$tmp/run.mjs" "$tmp/$name.wasm" || status=1
     else
         # shellcheck disable=SC2086
-        "${CC:-cc}" $warn $inc -o "$tmp/$name" "$t" $srcs
+        "${CC:-cc}" $warn $inc -o "$tmp/$name" "$t" $srcs $extra
         "$tmp/$name" || status=1
     fi
 done

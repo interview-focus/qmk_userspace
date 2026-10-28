@@ -1,5 +1,6 @@
 #include QMK_KEYBOARD_H
 
+#include "kb_machine.h"
 #include "kb_protocol.h"
 #include "kb_rules.h"
 #include "tmux_context.h"
@@ -228,129 +229,53 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 };
 // clang-format on
 
-// Which mode layer sits on top of _TMUX, or TMUX_OFF when tmux mode is off.
-// Layer 0 is _MAC and so can never be a mode, which leaves it free to mean off.
-#define TMUX_OFF 0
-static uint8_t tmux_mode = TMUX_OFF;
-
-// The left thumb modifier in effect. Every mode's is held, and only ever one at
-// a time. PANE and WINDOW both call their inner thumb MOVE and neither can be on
-// while the other is, so they share a value. These are the values STATE byte 9
-// carries, so 4 stays empty rather than being reused: the protocol reserved it
-// when WINDOW's NEW thumb went.
-enum tmux_modifier {
-    TMOD_NONE,
-    TMOD_RESIZE,
-    TMOD_SPLIT,
-    TMOD_MOVE,
-    TMOD_WORD = 5,
-    TMOD_LINE,
-};
-static uint8_t tmux_mod = TMOD_NONE;
-
 // Killing raises tmux's own "(y/n)" prompt, and the tree layer has no y on it
 // to answer with. So a kill is two presses of the same key: one to ask, one to
 // answer. True between those two presses.
 static bool tmux_kill_pending = false;
 
-// What the host reports. Reports only: nothing in here is ever a command, and
-// the keyboard's desired state above is never overwritten by it except through
-// the rules in raw_hid_receive.
-static kb_context_t ctx = {.seq = KB_SEQ_NONE};
-
-// The keyboard's side of the link: when the last CONTEXT landed, and the two
-// counters STATE carries. Zero until the first CONTEXT, which is what stops the
-// first 1.5 s after boot from reading as alive.
-static uint32_t ctx_last_ms;
-static uint8_t  ctx_my_seq, ctx_nonce;
-
-// What the keyboard just did, for the host to schedule its observation around.
-// It describes one keypress, so send_state clears it on the way out.
-static uint8_t kb_event, kb_event_arg;
-
-static uint8_t kb_os_source = KB_OS_FOLLOW;
-
-// Evaluated at the keypress and never cached: a mode entered while the host was
-// alive can be left after it has died.
-static bool host_alive(void) {
-    return kb_host_alive(ctx_last_ms, timer_read32());
-}
-
-// Puts the base layer wherever the source in charge says, which may be nowhere.
-// The layer is persisted, as it has always been, so an unplugged keyboard keeps
-// the last one it was on -- the override itself is not, so a replug comes back
-// up following the host.
-static void kb_apply_os(void) {
-    uint8_t want = kb_os_wanted(kb_os_source, ctx.os);
-    if (want == KB_OS_UNKNOWN) {
-        return;
-    }
-    uint8_t layer = (want == KB_OS_LINUX) ? _LINUX : _MAC;
-    if (get_highest_layer(default_layer_state) != layer) {
-        set_single_persistent_default_layer(layer);
-    }
-}
-
-#ifdef RAW_ENABLE
-// The two translations between the keymap's own enums and the protocol's values.
-// They live here rather than in kb_protocol.c because a layer number and a TMOD_
-// are the keymap's business, and the wire format should not have heard of
-// either. Nothing but STATE needs them.
-//
-// The keymap's layer number to the protocol's mode.
-static uint8_t kb_mode_of(uint8_t mode) {
+// The layer above _TMUX for each mode.
+static uint8_t mode_layer(uint8_t mode) {
     switch (mode) {
-        case _TMUX_TREE:
-            return KB_MODE_TREE;
-        case _TMUX_WINDOW:
-            return KB_MODE_WINDOW;
-        case _TMUX_PANE:
-            return KB_MODE_PANE;
-        case _TMUX_WITHIN:
-            return KB_MODE_WITHIN;
+        case KB_MODE_TREE:
+            return _TMUX_TREE;
+        case KB_MODE_WINDOW:
+            return _TMUX_WINDOW;
+        case KB_MODE_WITHIN:
+            return _TMUX_WITHIN;
         default:
-            return KB_MODE_OFF;
+            return _TMUX_PANE;
     }
 }
 
-// Sent on every change to a field the keyboard owns, on every intent, on
-// connect, and whenever a CONTEXT turns out to be answering an older STATE.
-static void send_state_msg(uint8_t type, uint8_t intent, uint8_t arg) {
-    // The nonce is what makes an intent one-shot: the host actuates once per
-    // nonce, so a resend of the same intent is a resend and not a second go.
-    if (intent) {
-        ctx_nonce++;
-    }
-    kb_state_t state = {
-        .type        = type,
-        .seq         = ++ctx_my_seq,
-        .ack         = ctx.seq,
-        .intent      = intent,
-        .intent_arg  = arg,
-        .nonce       = ctx_nonce,
-        .mode        = kb_mode_of(tmux_mode),
-        // TMOD_* are the protocol's own values, with 4 left as the hole where
-        // WINDOW's NEW thumb was, so there is nothing to translate.
-        .mod         = tmux_mod,
-        .os          = get_highest_layer(default_layer_state) == _LINUX ? KB_OS_LINUX : KB_OS_MAC,
-        .os_override = kb_os_source != KB_OS_FOLLOW,
-        .host_alive  = host_alive(),
-        .event       = kb_event,
-        .event_arg   = kb_event_arg,
-    };
-    uint8_t report[KB_REPORT_SIZE];
-    kb_state_report(report, &state);
-    raw_hid_send(report, KB_REPORT_SIZE);
-    kb_event     = KB_EVENT_NONE;
-    kb_event_arg = 0;
+uint32_t kb_io_now_ms(void) {
+    return timer_read32();
 }
 
-static void send_state(uint8_t intent, uint8_t arg) {
-    send_state_msg(KB_STATE, intent, arg);
-}
+void kb_io_send(const uint8_t report[KB_REPORT_SIZE]) {
+#ifdef RAW_ENABLE
+    raw_hid_send((uint8_t *)report, KB_REPORT_SIZE);
 #else
-#    define send_state(intent, arg) ((void)0)
+    (void)report;
 #endif
+}
+
+void kb_io_set_mode_layers(uint8_t mode) {
+    layer_off(_TMUX_TREE);
+    layer_off(_TMUX_WINDOW);
+    layer_off(_TMUX_PANE);
+    layer_off(_TMUX_WITHIN);
+    if (mode == KB_MODE_OFF) {
+        layer_off(_TMUX);
+    } else {
+        layer_on(_TMUX);
+        layer_on(mode_layer(mode));
+    }
+}
+
+void kb_io_set_base(uint8_t os) {
+    set_single_persistent_default_layer(os == KB_OS_LINUX ? _LINUX : _MAC);
+}
 
 // Every tmux action is one row of the key table in docs/00-protocol.md: a
 // single root-table key, which tmux runs the instant it arrives. The commands
@@ -367,52 +292,32 @@ static void tmux_fkey(uint8_t fkey, uint8_t mods) {
     // The host never actuates this -- tmux already has. It says which row went
     // out so the host knows what to watch for, and in the same encoding the
     // table uses: the row number, plus a bit per modifier.
-    kb_event     = KB_EVENT_TMUX_KEY;
-    kb_event_arg = kb_tmux_event_arg(fkey - KC_F13 + 1, mods & MOD_LSFT, mods & MOD_LCTL, mods & MOD_LALT);
-    send_state(0, 0);
+    kb.event     = KB_EVENT_TMUX_KEY;
+    kb.event_arg = kb_tmux_event_arg(fkey - KC_F13 + 1, mods & MOD_LSFT, mods & MOD_LCTL, mods & MOD_LALT);
+    kb_send_state(0, 0);
 }
 
 // TREE and WITHIN put the pane into a real tmux mode rather than just changing
 // what the keyboard sends, so the pane has to be taken back out of it before
 // anything else happens.
 static void tmux_quit_mode(void) {
-    if (tmux_mode == _TMUX_TREE || tmux_mode == _TMUX_WITHIN) {
+    if (kb.mode == KB_MODE_TREE || kb.mode == KB_MODE_WITHIN) {
         tmux_fkey(KC_F20, 0);
     }
-}
-
-// Move the layers only, for the keys that have already dealt with tmux
-// themselves. tmux_switch_mode below is the one that opens the new mode.
-static void tmux_set_mode(uint8_t mode) {
-    layer_off(_TMUX_TREE);
-    layer_off(_TMUX_WINDOW);
-    layer_off(_TMUX_PANE);
-    layer_off(_TMUX_WITHIN);
-    if (mode == TMUX_OFF) {
-        layer_off(_TMUX);
-    } else {
-        layer_on(_TMUX);
-        layer_on(mode);
-    }
-    tmux_mode = mode;
-    // The thumb modifiers belong to the mode they were pressed in, so WITHIN's
-    // WORD can never survive into PANE.
-    tmux_mod = TMOD_NONE;
-    send_state(0, 0);
 }
 
 // The host mirrors the held modifier into its status line, so it has to hear
 // about the release as well as the press.
 static void tmux_set_mod(uint8_t mod) {
-    tmux_mod = mod;
-    send_state(0, 0);
+    kb.mod = mod;
+    kb_send_state(0, 0);
 }
 
 // The four directions differ only in which row they send, and the modifiers
 // only in which mod rides on it: Shift resizes, Ctrl splits, Alt swaps. That is
 // the whole of the table's PANE block.
 static void tmux_pane_arrow(uint8_t fkey) {
-    switch (tmux_mod) {
+    switch (kb.mod) {
         case TMOD_RESIZE:
             tmux_fkey(fkey, MOD_LSFT);
             break;
@@ -428,36 +333,21 @@ static void tmux_pane_arrow(uint8_t fkey) {
     }
 }
 
-// Which target WITHIN is driving right now. Resolved from the host at the
-// moment of the press, never remembered: the pane under the cursor can change
-// without the keyboard being told, and a stale answer is how Escape ends up in
-// a live Claude prompt. The OLED calls this too, so it is also what the word on
-// the screen means.
-static within_target_t within_now(void) {
-    return within_target(&ctx, host_alive());
-}
-
 static within_mod_t within_mod_now(void) {
-    return tmux_mod == TMOD_WORD ? WM_WORD : tmux_mod == TMOD_LINE ? WM_LINE : WM_NONE;
+    return kb.mod == TMOD_WORD ? WM_WORD : kb.mod == TMOD_LINE ? WM_LINE : WM_NONE;
 }
-
-// The status already acted on, so a host repeating it does not re-trigger, and
-// when the mark it left on the OLED goes out.
-static uint8_t  intent_acked;
-static uint32_t intent_mark_ms;
-static bool     intent_failed;
 
 // Sends one resolved action. A row of the tmux key table goes out through
 // tmux_fkey so the host still hears the event; anything else is a keystroke for
 // the program. An action that is all zero sends nothing, which is the point of
 // it -- that is claude-safe refusing to put a letter into a live prompt.
 static void within_send(within_key_t key) {
-    within_action_t a = within_resolve(within_now(), key, within_mod_now());
+    within_action_t a = within_resolve(kb_within_now(), key, within_mod_now());
 
     if (a.intent) {
-        intent_failed = false;
-        intent_acked  = KB_INTENT_NONE;
-        send_state(a.intent, 0);
+        kb.intent_failed = false;
+        kb.intent_acked  = KB_INTENT_NONE;
+        kb_send_state(a.intent, 0);
         return;
     }
     const uint16_t pair[2] = {a.key, a.then};
@@ -475,10 +365,10 @@ static void within_send(within_key_t key) {
 
 static void tmux_switch_mode(uint8_t mode) {
     tmux_quit_mode();
-    tmux_set_mode(mode);
-    if (mode == _TMUX_TREE) {
+    kb_set_mode(mode);
+    if (mode == KB_MODE_TREE) {
         tmux_fkey(KC_F21, 0);
-    } else if (mode == _TMUX_WITHIN) {
+    } else if (mode == KB_MODE_WITHIN) {
         // Whatever the target needs to become navigable: copy-mode for a shell,
         // Ctrl-O for a Claude pane whose viewer is shut, nothing for a viewer or
         // for hunk, which are navigable already.
@@ -528,27 +418,27 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         // first tap off Follow may not move the layer at all -- it is already
         // where the host put it -- so the OLED says LOCK to show what changed.
         case OS_SWAP:
-            kb_os_source = kb_os_next(kb_os_source);
+            kb.os_source = kb_os_next(kb.os_source);
             kb_apply_os();
-            send_state(0, 0);
+            kb_send_state(0, 0);
             return false;
 
         // Tapping the current mode's own key quits TREE or WITHIN and falls back
         // to PANE; in PANE and WINDOW there is nothing open to quit.
         case TMUX_ON:
-            tmux_set_mode(_TMUX_PANE);
+            kb_set_mode(KB_MODE_PANE);
             return false;
         case TM_TREE:
-            tmux_switch_mode(tmux_mode == _TMUX_TREE ? _TMUX_PANE : _TMUX_TREE);
+            tmux_switch_mode(kb.mode == KB_MODE_TREE ? KB_MODE_PANE : KB_MODE_TREE);
             return false;
         case TM_WIN:
-            if (tmux_mode != _TMUX_WINDOW) {
-                tmux_switch_mode(_TMUX_WINDOW);
+            if (kb.mode != KB_MODE_WINDOW) {
+                tmux_switch_mode(KB_MODE_WINDOW);
             }
             return false;
         case TM_PANE:
-            if (tmux_mode != _TMUX_PANE) {
-                tmux_switch_mode(_TMUX_PANE);
+            if (kb.mode != KB_MODE_PANE) {
+                tmux_switch_mode(KB_MODE_PANE);
             }
             return false;
         // F goes deeper while there is deeper to go and comes back out when there
@@ -557,18 +447,18 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         // nothing further in, so it leaves straight away -- which is also what
         // stops it closing and reopening copy mode and losing the cursor.
         case TM_WITHIN:
-            if (tmux_mode == _TMUX_WITHIN) {
-                switch (within_now()) {
+            if (kb.mode == KB_MODE_WITHIN) {
+                switch (kb_within_now()) {
                     // Copy mode is as far in as it goes, so F comes out of it.
                     // A Claude pane has the viewer underneath, so that lands back
                     // in the viewer and WITHIN still means something. Anything
                     // else has nothing underneath, and WITHIN with nothing open
                     // sends vi letters to the program, so the mode comes out too.
                     case WT_COPY:
-                        if (host_alive() && ctx.program == KB_PROGRAM_CLAUDE) {
+                        if (kb_alive() && kb.ctx.program == KB_PROGRAM_CLAUDE) {
                             tmux_fkey(KC_F20, 0);
                         } else {
-                            tmux_switch_mode(_TMUX_PANE);
+                            tmux_switch_mode(KB_MODE_PANE);
                         }
                         return false;
                     // Nothing was opened, so there is nothing to unwind.
@@ -578,17 +468,17 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                         break;
                 }
             }
-            tmux_switch_mode(_TMUX_WITHIN);
+            tmux_switch_mode(KB_MODE_WITHIN);
             return false;
         case TM_EXIT:
             // Leaving a tree or copy mode open would send the next thing typed
             // into it instead of the shell.
             tmux_quit_mode();
-            tmux_set_mode(TMUX_OFF);
+            kb_set_mode(KB_MODE_OFF);
             return false;
         case TM_DTCH:
             tmux_fkey(KC_F17, MOD_LCTL);
-            tmux_set_mode(TMUX_OFF);
+            kb_set_mode(KB_MODE_OFF);
             return false;
 
         case TP_UP:
@@ -616,20 +506,20 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         // Up and down are sessions, which MOVE has nothing to say about, so
         // they are dead while it is held.
         case TW_UP:
-            if (tmux_mod == TMOD_NONE) {
+            if (kb.mod == TMOD_NONE) {
                 tmux_fkey(KC_F19, MOD_LSFT);
             }
             return false;
         case TW_DOWN:
-            if (tmux_mod == TMOD_NONE) {
+            if (kb.mod == TMOD_NONE) {
                 tmux_fkey(KC_F20, MOD_LSFT);
             }
             return false;
         case TW_LEFT:
-            tmux_fkey(KC_F22, tmux_mod == TMOD_MOVE ? MOD_LSFT : 0);
+            tmux_fkey(KC_F22, kb.mod == TMOD_MOVE ? MOD_LSFT : 0);
             return false;
         case TW_RGHT:
-            tmux_fkey(KC_F23, tmux_mod == TMOD_MOVE ? MOD_LSFT : 0);
+            tmux_fkey(KC_F23, kb.mod == TMOD_MOVE ? MOD_LSFT : 0);
             return false;
         case TW_LAST:
             tmux_fkey(KC_F21, MOD_LSFT);
@@ -639,7 +529,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             // The tree's own template decides what choosing an item means, so
             // there is nothing to know here beyond "the tree is now closed".
             tap_code(KC_ENT);
-            tmux_set_mode(_TMUX_PANE);
+            kb_set_mode(KB_MODE_PANE);
             return false;
         // A bare x, because the tree is reading keys itself rather than through
         // the prefix. It kills whatever is highlighted, session or window, and
@@ -698,15 +588,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         // something -- in the transcript or at a Claude prompt they are dead and
         // the keyboard stays where it is.
         case TC_COPY:
-            if (within_now() == WT_COPY) {
+            if (kb_within_now() == WT_COPY) {
                 within_send(WK_COPY);
-                tmux_set_mode(_TMUX_PANE);
+                kb_set_mode(KB_MODE_PANE);
             }
             return false;
         case TC_PSTE:
-            if (within_now() == WT_COPY) {
+            if (kb_within_now() == WT_COPY) {
                 within_send(WK_PASTE);
-                tmux_set_mode(TMUX_OFF);
+                kb_set_mode(KB_MODE_OFF);
             }
             return false;
     }
@@ -716,55 +606,14 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 #ifdef RAW_ENABLE
 void raw_hid_receive(uint8_t *data, uint8_t length) {
-    if (!kb_context_parse(data, length, &ctx)) {
-        return;
-    }
-    // host_alive reads zero as "no CONTEXT yet", and timer_read32 can
-    // legitimately return zero, so that one value is never stored.
-    ctx_last_ms = timer_read32();
-    if (ctx_last_ms == 0) {
-        ctx_last_ms = 1;
-    }
-
-    kb_apply_os();
-
-    // The safety net, not a normal path: the world moved without the keyboard
-    // -- a pane closed, a program exited -- so the host is right and the
-    // keyboard adopts PANE. tmux_set_mode sends the corrected state itself.
-    bool claims_mode = tmux_mode == _TMUX_TREE || (tmux_mode == _TMUX_WITHIN && within_now() == WT_COPY);
-    if (kb_adopt_pane(&ctx, claims_mode)) {
-        tmux_set_mode(_TMUX_PANE);
-        return;
-    }
-
-    // The intent is one-shot, so this is the whole of the keyboard's part in it:
-    // a failure puts the mode back where the key found it, and either answer
-    // leaves a mark on the OLED for a second.
-    // Edge triggered on the status, not level: the host keeps reporting the same
-    // answer every 500 ms until the next intent, so acting on it each time would
-    // hold the OLED mark on for as long as the daemon kept talking.
-    if (kb_intent_settled(&ctx, ctx_nonce) && ctx.intent_status != intent_acked) {
-        // Neither intent moves the mode: both are entered from WITHIN and both
-        // succeed by changing which target resolves, so a failure needs nothing
-        // undone and the mark is the whole of the keyboard's response.
-        intent_acked   = ctx.intent_status;
-        intent_failed  = ctx.intent_status == KB_INTENT_FAILED;
-        intent_mark_ms = timer_read32();
-    }
-
-    // A CONTEXT whose ack is not the current seq answered an older STATE, so
-    // say the current one again. The host acks the latest report it has seen
-    // rather than the one it is replying to, so a STATE that crossed a CONTEXT
-    // in flight costs one extra round trip and then settles.
-    if (ctx.ack != ctx_my_seq) {
-        send_state(0, 0);
-    }
-}
-
-void keyboard_post_init_user(void) {
-    send_state_msg(KB_HELLO, 0, 0);
+    kb_receive(data, length);
 }
 #endif
+
+void keyboard_post_init_user(void) {
+    kb_machine_init(get_highest_layer(default_layer_state) == _LINUX ? KB_OS_LINUX : KB_OS_MAC);
+    kb_hello();
+}
 
 #ifdef OLED_ENABLE
 bool oled_task_user(void) {
@@ -777,27 +626,27 @@ bool oled_task_user(void) {
         // Which OS is only half the story once the host reports one: LOCK is
         // what says this layer is a decision rather than a report, and that
         // OS_SWAP is what will give it back.
-        if (kb_os_source != KB_OS_FOLLOW) {
+        if (kb.os_source != KB_OS_FOLLOW) {
             oled_write_P(PSTR(" LOCK"), false);
         }
         oled_write_ln_P(PSTR(""), false);
         // The tmux layers are toggled, so without this there is no way to tell
         // which mode - or whether tmux mode at all - is on.
-        switch (tmux_mode) {
-            case _TMUX_TREE:
+        switch (kb.mode) {
+            case KB_MODE_TREE:
                 oled_write_P(PSTR("TREE"), false);
                 break;
-            case _TMUX_WINDOW:
+            case KB_MODE_WINDOW:
                 oled_write_P(PSTR("WINDOW"), false);
                 break;
-            case _TMUX_PANE:
+            case KB_MODE_PANE:
                 oled_write_P(PSTR("PANE"), false);
                 break;
             // WITHIN prints the target rather than the mode. The mode is always
             // WITHIN and says nothing; the target is what decides what every key
             // on the layer sends, so it is the only thing worth the line.
-            case _TMUX_WITHIN:
-                switch (within_now()) {
+            case KB_MODE_WITHIN:
+                switch (kb_within_now()) {
                     case WT_TRANSCRIPT:
                         oled_write_P(PSTR("TRSC"), false);
                         break;
@@ -813,7 +662,7 @@ bool oled_task_user(void) {
                 }
                 break;
         }
-        switch (tmux_mod) {
+        switch (kb.mod) {
             case TMOD_RESIZE:
                 oled_write_P(PSTR(" RESIZE"), false);
                 break;
@@ -834,16 +683,16 @@ bool oled_task_user(void) {
         // cannot see the answer to: an intent the host is still working on, and a
         // Ctrl-O whose viewer the host has not reported yet. ! is a failed
         // intent, for a second.
-        if (ctx.intent_status == KB_INTENT_PENDING || (tmux_mode == _TMUX_WITHIN && within_now() == WT_CLAUDE_SAFE && ctx.transcript == KB_TRANSCRIPT_UNKNOWN)) {
+        if (kb.ctx.intent_status == KB_INTENT_PENDING || (kb.mode == KB_MODE_WITHIN && kb_within_now() == WT_CLAUDE_SAFE && kb.ctx.transcript == KB_TRANSCRIPT_UNKNOWN)) {
             oled_write_P(PSTR(" ?"), false);
-        } else if (intent_failed && timer_elapsed32(intent_mark_ms) < 1000) {
+        } else if (kb.intent_failed && timer_elapsed32(kb.intent_mark_ms) < 1000) {
             oled_write_P(PSTR(" !"), false);
         }
         // No fresh report from the host, so the keyboard has no idea what is in
         // the pane: WITHIN is plain copy mode and nothing resolves. Worth a mark
         // of its own, because every key still works and only the smart ones are
         // missing.
-        if (tmux_mode != TMUX_OFF && !host_alive()) {
+        if (kb.mode != KB_MODE_OFF && !kb_alive()) {
             oled_write_P(PSTR(" ~"), false);
         }
         // A kill is waiting on its second press. tmux is showing its own prompt
@@ -860,8 +709,8 @@ bool oled_task_user(void) {
         // that is still being written, and bypassPermissions is worth seeing
         // before you background something. Blank for any other program, because
         // the line is only meaningful for Claude.
-        if (host_alive() && ctx.program == KB_PROGRAM_CLAUDE) {
-            switch (ctx.phase) {
+        if (kb_alive() && kb.ctx.program == KB_PROGRAM_CLAUDE) {
+            switch (kb.ctx.phase) {
                 case KB_PHASE_IDLE:
                     oled_write_P(PSTR("idle"), false);
                     break;
@@ -872,7 +721,7 @@ bool oled_task_user(void) {
                     oled_write_P(PSTR("wait"), false);
                     break;
             }
-            switch (ctx.perm) {
+            switch (kb.ctx.perm) {
                 case KB_PERM_DEFAULT:
                     oled_write_P(PSTR(" default"), false);
                     break;

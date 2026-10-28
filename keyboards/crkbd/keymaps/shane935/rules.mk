@@ -16,3 +16,4 @@ MOUSEKEY_ENABLE = no
 SRC += kb_protocol.c
 SRC += tmux_context.c
 SRC += kb_rules.c
+SRC += kb_machine.c
