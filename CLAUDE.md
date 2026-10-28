@@ -50,11 +50,15 @@ has to be updated by hand when that behaviour changes.
 ## Tests
 
 `kb_protocol.c` (the wire format), `kb_rules.c` (how reports change desired
-state) and `tmux_context.c` (what WITHIN mode sends) are the parts that need no
-QMK, and `test/run.sh` builds and runs them. It also preprocesses `keymap.c` in
-all four RAW_ENABLE/OLED_ENABLE combinations, which catches an unbalanced
-`#ifdef` without needing a QMK build — counting directives by eye does not,
-because it misses `#else`.
+state), `tmux_context.c` (what WITHIN mode sends) and `kb_machine.c` (the
+keyboard's state, its keys and its side of the link) are the parts that need no
+QMK, and `test/run.sh` builds and runs them. `kb_machine.c` reaches QMK only
+through the `kb_io_` functions it declares: `keymap.c` defines them with QMK
+calls, and `kb_machine_test.c` defines them to record each call.
+
+`run.sh` also preprocesses `keymap.c` in all four RAW_ENABLE/OLED_ENABLE
+combinations, which catches an unbalanced `#ifdef` without needing a QMK build
+— counting directives by eye does not, because it misses `#else`.
 
 There is no C compiler in the agent sandbox. Point `WASI_SDK` at an unpacked
 wasi-sdk and `run.sh` builds for wasm32-wasip1 and runs under node instead; the
@@ -68,6 +72,9 @@ checkout and `run.sh` also parses that repo's `contract/to-keyboard/`;
 updates it. QMK's root `.gitignore` drops `*.bin`, and `contract/.gitignore`
 is what keeps the reports committed.
 
+Custom keycodes are listed once, in `KB_KEYS` in `kb_machine.h`; `keymap.c`
+and `site/parse.mjs` both read the list from there.
+
 `keymap.c` itself only compiles under QMK, because `quantum/keymap_introspection.c`
 is the translation unit that includes it.
 
@@ -79,10 +86,11 @@ and Claude Code config. The daemon and dotfiles repos take copies from here, so 
 change goes in here first and is copied out. `VERSION` in `00-protocol.md` tracks
 the wire format and the key table, not the prose.
 
-There is no separate firmware spec: the code is it. `tmux_context.c` holds what
-WITHIN sends, `kb_rules.c` how reports change desired state, `kb_protocol.c` the
-wire format, and each has a test beside it. What is left in `keymap.c` is wiring,
-and only a flashed board can check that.
+There is no separate firmware spec: the code is it. `kb_machine.c` holds what
+each key and each report does, `tmux_context.c` what WITHIN sends, `kb_rules.c`
+how reports change desired state, `kb_protocol.c` the wire format, and each has
+a test beside it. What is left in `keymap.c` is the keymap array, the OLED, and
+the `kb_io_` functions, and only a flashed board can check those.
 
 `bugs.md` is what is known to be wrong and deliberately not fixed, with what
 each fix would take.

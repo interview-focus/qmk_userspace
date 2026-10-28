@@ -1,10 +1,8 @@
 // Unit tests for kb_protocol.c, the byte offsets and bit packing of
 // docs/00-protocol.md. Run with test/run.sh.
 //
-// This is the one part of the keymap worth a test of its own: an offset or a
-// bit that is wrong by one is invisible on the keyboard and shows up as the
-// daemon quietly misreading every report. Everything else in keymap.c is
-// wiring, and only a flashed board can check it.
+// An offset or a bit that is wrong by one is invisible on the keyboard and
+// shows up as the daemon quietly misreading every report.
 
 #include "../kb_protocol.h"
 
@@ -218,7 +216,7 @@ static void test_context_rejects(void) {
     check(!kb_context_parse(buf, KB_REPORT_SIZE - 1, &c), "a short report is rejected");
 
     // Every rejection above left the caller's context untouched, which is what
-    // lets raw_hid_receive keep using it after a bad report.
+    // lets kb_receive keep using it after a bad report.
     check_eq(c.os, KB_OS_MAC, "a rejected report does not touch the context");
 }
 

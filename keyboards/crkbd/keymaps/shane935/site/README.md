@@ -23,8 +23,8 @@ hold-Control, `_______` is resolved to the key it actually falls through to,
 and the Mac-versus-Linux differences are computed by diffing the layer pairs.
 
 What the array does **not** encode is written by hand in `annotations.mjs`:
-every custom keycode (they are cases in `process_record_user`, and the array
-shows only the name), the both-shifts Caps Word chord (it lives in `config.h`
+every custom keycode (they are cases in `kb_key` in `kb_machine.c`, and the
+array shows only the name), the both-shifts Caps Word chord (it lives in `config.h`
 and has no array entry at all), the 200 ms tapping term, and tmux mode being a
 toggle rather than a hold. Edit that file when the behaviour changes.
 

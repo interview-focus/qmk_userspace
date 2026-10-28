@@ -52,7 +52,7 @@ status=0
 # keymap.c cannot be compiled without QMK, but its preprocessor directives can
 # be checked without it, and an #ifdef that loses its #else is exactly the kind
 # of break that survives a careful read. All four combinations, because the
-# RAW_ENABLE-off branch defines send_state as a macro and is never built here.
+# RAW_ENABLE-off and OLED_ENABLE-off branches are never built here.
 cc_pp="${CC:-cc}"
 pp_target=""
 if [ -n "$WASI_SDK" ]; then

@@ -5,9 +5,6 @@
 // A wrong term in kb_adopt_pane drops you out of copy mode at random; a wrong
 // bit in kb_tmux_row_mods sends the unmodified key and resizes nothing. Neither
 // is visible from reading the call site. test/run.sh builds them natively.
-//
-// What is left in keymap.c is wiring: the dispatch, the layer calls and the
-// OLED, none of which a unit test can say anything useful about.
 
 #pragma once
 
