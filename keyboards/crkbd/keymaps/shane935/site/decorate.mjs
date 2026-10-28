@@ -74,7 +74,7 @@ function decode(token, { os, groups, customKeycodes, customKeys, where }) {
         };
     }
     if (customKeycodes.includes(token)) {
-        // A custom keycode does whatever process_record_user says it does, and
+        // A custom keycode does whatever kb_key in kb_machine.c says it does, and
         // nothing here can read that, so annotations.mjs has to say. Deriving a
         // label from the name would turn TP_RSZE into "TP RSZE" and claim to
         // have understood it.
