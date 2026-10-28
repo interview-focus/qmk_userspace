@@ -125,8 +125,9 @@ void kb_receive(const uint8_t *data, uint8_t length) {
     }
 }
 
-// Every tmux action is one row of the key table in docs/00-protocol.md: a
-// single root-table key, which tmux runs the instant it arrives. The commands
+// Every tmux action is one row of the key table in keyboard-daemon's
+// src/keytable.ts: a single root-table key, which tmux runs the instant it
+// arrives. The commands
 // themselves -- and so the directory a new pane opens in, and every other flag
 // -- live in the generated tmux.conf, not here. mods names the row, so S-F19 in
 // the table is tmux_fkey(KC_F19, MOD_LSFT) here.

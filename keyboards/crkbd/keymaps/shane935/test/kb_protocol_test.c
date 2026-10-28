@@ -1,5 +1,5 @@
 // Unit tests for kb_protocol.c, the byte offsets and bit packing of
-// docs/00-protocol.md. Run with test/run.sh.
+// the wire format. Run with test/run.sh.
 //
 // An offset or a bit that is wrong by one is invisible on the keyboard and
 // shows up as the daemon quietly misreading every report.

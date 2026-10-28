@@ -6,9 +6,9 @@
 // default that config.h leaves commented out. Keep it accurate by hand.
 //
 // The tmux keycodes are the bulk of it. Every one of them is a case in
-// process_record_user that sends one row of the key table in
-// docs/00-protocol.md, and the array shows only the name, so customKeys below
-// is the only place the page learns what they do.
+// process_record_user that sends one row of the key table in keyboard-daemon's
+// src/keytable.ts, and the array shows only the name, so customKeys below is
+// the only place the page learns what they do.
 //
 // A module rather than JSON so it can carry comments and multi-line prose.
 
@@ -538,8 +538,8 @@ export default {
             body: 'Each tmux action is a single function key from F13 to F24, with Shift, Ctrl ' +
                 'or Alt where it needs one, bound in tmux\'s root key table to the command it ' +
                 'runs. No prefix, so there is no half-pressed state to get stuck in, and tmux ' +
-                'acts the instant the key arrives. The table lives in docs/00-protocol.md and ' +
-                'is generated into tmux.conf from the same source, so the two cannot drift, and ' +
+                'acts the instant the key arrives. The table lives in the host daemon and ' +
+                'is generated into tmux.conf from it, so the two cannot drift, and ' +
                 'every flag — which directory a new pane opens in, which pane keeps the focus ' +
                 'after a swap — lives there rather than in keymap.c. The keymap does not know ' +
                 'the prefix at all and has no second path to fall back to: a terminal that will ' +

@@ -1,4 +1,4 @@
-// The wire format from docs/00-protocol.md, and nothing else.
+// The wire format shared with keyboard-daemon, and nothing else.
 //
 // This file knows no QMK and no keymap: not a layer number, not a keycode, not
 // a TMOD_. Everything it is handed is already in the protocol's own values, so

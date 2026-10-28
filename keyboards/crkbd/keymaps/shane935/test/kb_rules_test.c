@@ -94,7 +94,7 @@ static void test_adopt_pane(void) {
     kb_context_t tree = ctx_of(KB_TMUX_PRESENT | KB_TMUX_OTHER_MODE, KB_INTENT_NONE);
     check(!kb_adopt_pane(&tree, true), "a tree open agrees with the keyboard");
 
-    // The guard I added over the spec: a report from outside tmux has no mode
+    // Not a contradiction: a report from outside tmux has no mode
     // open because there is nothing to have open, and reading that as a
     // contradiction would knock you out of copy mode on every window switch.
     kb_context_t no_tmux = ctx_of(0, KB_INTENT_NONE);
