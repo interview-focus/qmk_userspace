@@ -18,7 +18,8 @@
 #
 # With KEYBOARD_DAEMON pointing at a checkout of keyboard-daemon, it also checks
 # kb_context_parse reads the daemon's contract/to-keyboard/ back as the daemon
-# says it should. That needs node, wasm or not.
+# says it should. That needs node, wasm or not. contract/to-keyboard.verified
+# notes which daemon contract last passed; `record` updates it.
 set -e
 here=$(dirname "$0")
 root="$here/../../../../.."
@@ -106,10 +107,10 @@ else
 fi
 
 daemon_contract="${KEYBOARD_DAEMON:+$KEYBOARD_DAEMON/contract/to-keyboard}"
-if [ "$1" = record ]; then
-    :
-elif [ -z "$daemon_contract" ]; then
-    echo "contract: to-keyboard skipped; set KEYBOARD_DAEMON to a keyboard-daemon checkout"
+verified="$here/../contract/to-keyboard.verified"
+if [ -z "$daemon_contract" ]; then
+    last=$(sed -n 's/.*"daemonCommit": "\(.*\)".*/\1/p' "$verified" 2>/dev/null || true)
+    echo "contract: to-keyboard skipped, last passed against daemon ${last:-nothing}; set KEYBOARD_DAEMON to a keyboard-daemon checkout"
 else
     read_out="$tmp/to-keyboard.json"
     if [ -n "$WASI_SDK" ]; then
@@ -121,7 +122,7 @@ else
         "${CC:-cc}" $warn -o "$tmp/read_contract" "$here/read_contract.c" "$here/../kb_protocol.c"
         "$tmp/read_contract" "$daemon_contract" > "$read_out" || status=1
     fi
-    if node "$here/check_contract.mjs" "$daemon_contract/input.json" "$read_out"; then
+    if node "$here/check_contract.mjs" "$daemon_contract" "$read_out" "$verified" "$1"; then
         echo "contract: to-keyboard reads back as the daemon recorded it"
     else
         status=1
