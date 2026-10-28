@@ -83,13 +83,13 @@ is the translation unit that includes it.
 
 ## The protocol
 
-`docs/` holds all three specs and is where all three are edited: `00-protocol.md`
-is the wire contract, `20-daemon.md` the host daemon, `30-dotfiles.md` the tmux
-and Claude Code config. The daemon and dotfiles repos take copies from here, so a
-change goes in here first and is copied out. `VERSION` in `00-protocol.md` tracks
-the wire format and the key table, not the prose.
+There are no prose specs: the code is the source of truth. The wire format is
+`kb_protocol.c` here and `src/protocol.ts` in keyboard-daemon, held together by
+`contract/`. The tmux key table, and the tmux.conf generated from it, live only
+in keyboard-daemon's `src/keytable.ts`. `KB_VERSION` changes when the wire
+format or the key table does, on both sides at once.
 
-There is no separate firmware spec: the code is it. `kb_machine.c` holds what
+`kb_machine.c` holds what
 each key and each report does, `tmux_context.c` what WITHIN sends, `kb_rules.c`
 how reports change desired state, `kb_protocol.c` the wire format, and each has
 a test beside it. What is left in `keymap.c` is the keymap array, the OLED, and
@@ -105,7 +105,7 @@ authoritative about. Reports are inputs to the keyboard's own rules, never
 commands.
 
 Every tmux *action* — anything that changes what tmux is showing — is a single
-root-table key from the table in that file, so the commands and all their flags
+root-table key from the daemon's key table, so the commands and all their flags
 live in the daemon's generated tmux.conf and not in `keymap.c`. Keys sent to a
 tmux mode that is already open are the exception and go straight through:
 choose-tree's own x, y, Enter and arrows, and copy-mode-vi's motions. The
