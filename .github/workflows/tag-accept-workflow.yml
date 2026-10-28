@@ -1,0 +1,20 @@
+  name: accept
+  on:
+    pull_request_review:
+      types: [submitted]
+
+  # The built-in token only reads tags and comments; the App writes the tag.
+  permissions:
+    contents: read
+    pull-requests: write
+
+  jobs:
+    accept:
+      # Filter here too, so ordinary reviews don't start a runner.
+      if: startsWith(github.event.review.body, '/accept')
+      uses: interview-focus/.github/.github/workflows/accept.yml@main
+      with:
+        app-id: ${{ vars.ACCEPT_APP_ID }}
+        accepters: ${{ vars.AGENT_ACCEPTERS }}
+      secrets:
+        TAG_WORKFLOW_SECRET: ${{ secrets.TAG_WORKFLOW_SECRET }}
