@@ -111,6 +111,12 @@ typedef struct {
     // around. It describes one keypress, so kb_send_state clears it.
     uint8_t event, event_arg;
 
+    // When the current mode was entered, and whether the host has since reported
+    // the tmux mode it opens. The host answers every STATE from the pane it last
+    // looked at, so until then a report of no mode open says nothing.
+    uint32_t mode_entered_ms;
+    bool     mode_seen_open;
+
     // Killing raises tmux's own "(y/n)" prompt, and the tree layer has no y on it
     // to answer with. So a kill is two presses of the same key: one to ask, one to
     // answer. True between those two presses.

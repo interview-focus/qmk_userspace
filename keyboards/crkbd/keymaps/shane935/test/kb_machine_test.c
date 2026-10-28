@@ -207,43 +207,6 @@ static void test_forced_os(void) {
     check_eq(kb.base_os, KB_OS_LINUX, "forced linux: remembered");
 }
 
-static void test_adopt_pane(void) {
-    reset(KB_OS_MAC);
-    kb.mode        = KB_MODE_TREE;
-    kb.mod         = TMOD_MOVE;
-    kb_context_t c = steady();
-    c.ack          = 0;
-    receive(&c);
-    check_eq(n_calls, 2, "TREE closed behind the keyboard: layers, then one STATE");
-    check_eq(calls[0].kind, CALL_LAYERS, "adopt: layers first");
-    check_eq(calls[0].arg, KB_MODE_PANE, "adopt: to PANE");
-    check_eq(calls[1].report[8], KB_MODE_PANE, "adopt: STATE says PANE");
-    check_eq(calls[1].report[9], TMOD_NONE, "adopt: held modifier cleared");
-    check_eq(kb.mode, KB_MODE_PANE, "adopt: mode moved");
-
-    reset(KB_OS_MAC);
-    kb.mode          = KB_MODE_TREE;
-    c                = steady();
-    c.intent_status  = KB_INTENT_PENDING;
-    receive(&c);
-    check_eq(kb.mode, KB_MODE_TREE, "an intent in flight explains it: TREE kept");
-
-    // WITHIN only claims a mode when it is driving copy mode.
-    reset(KB_OS_MAC);
-    kb.mode = KB_MODE_WITHIN;
-    c       = steady();
-    receive(&c);
-    check_eq(kb.mode, KB_MODE_PANE, "WITHIN on a shell, copy mode gone: PANE");
-
-    reset(KB_OS_MAC);
-    kb.mode      = KB_MODE_WITHIN;
-    c            = steady();
-    c.program    = KB_PROGRAM_CLAUDE;
-    c.transcript = KB_TRANSCRIPT_OPEN;
-    receive(&c);
-    check_eq(kb.mode, KB_MODE_WITHIN, "WITHIN in Claude's viewer: kept");
-}
-
 static void test_intent_result(void) {
     reset(KB_OS_MAC);
     kb_send_state(KB_INTENT_WITHIN_OPEN, 0);
@@ -657,6 +620,111 @@ static void test_within_keys(void) {
     press(KBK_TM_WITHIN);
     check_eq(kb.intent_acked, KB_INTENT_NONE, "intent: the old answer forgotten");
     check_eq(kb.intent_failed, false, "intent: the failed mark cleared");
+}
+
+// ---------------------------------------------------------------- adopt
+//
+// The keyboard drops to PANE when tmux closes TREE or copy mode behind it, but
+// only once the host has seen the mode open or has had KB_HOST_TIMEOUT_MS to.
+// The host answers every STATE at once, from the pane it last looked at, so its
+// first replies to a mode key always show the mode not open yet.
+
+static uint8_t host_seq;
+
+// A CONTEXT from a live host in tmux, on a shell pane, acking ack.
+static void host_reports_acking(uint8_t ack, uint8_t tmux_bits) {
+    kb_context_t c = steady();
+    c.seq          = ++host_seq;
+    c.ack          = ack;
+    c.tmux_bits    = KB_TMUX_PRESENT | KB_TMUX_FOCUSED | tmux_bits;
+    receive(&c);
+}
+
+static void host_reports(uint8_t tmux_bits) {
+    host_reports_acking(kb.my_seq, tmux_bits);
+}
+
+// Presses a mode key from PANE, then has the host answer the first STATE that
+// press sent with what it saw before the key reached tmux.
+static void enter_and_reply(kb_key_t key, uint8_t tmux_bits) {
+    uint8_t first = kb.my_seq + 1;
+    press(key);
+    host_reports_acking(first, tmux_bits);
+}
+
+static void test_adopt_pane(void) {
+    in_mode(KB_MODE_PANE, TMOD_NONE);
+    enter_and_reply(KBK_TM_TREE, 0);
+    check_eq(kb.mode, KB_MODE_TREE, "the reply to entering TREE keeps TREE");
+
+    in_mode(KB_MODE_PANE, TMOD_NONE);
+    enter_and_reply(KBK_TM_WITHIN, 0);
+    check_eq(kb.mode, KB_MODE_WITHIN, "the reply to entering WITHIN on a shell keeps WITHIN");
+
+    in_mode(KB_MODE_PANE, TMOD_NONE);
+    press(KBK_TM_TREE);
+    host_reports(KB_TMUX_OTHER_MODE);
+    n_calls = 0;
+    host_reports(0);
+    expect("a tree seen open, then closed: PANE", "layers PANE | state");
+    check_eq(kb.mode, KB_MODE_PANE, "tree closed: mode moved");
+    check_eq(calls[1].report[8], KB_MODE_PANE, "tree closed: STATE says PANE");
+
+    in_mode(KB_MODE_PANE, TMOD_NONE);
+    press(KBK_TM_WITHIN);
+    host_reports(KB_TMUX_COPY_MODE);
+    n_calls = 0;
+    host_reports(0);
+    expect("copy mode seen open, then closed: PANE", "layers PANE | state");
+    check_eq(kb.mode, KB_MODE_PANE, "copy mode closed: mode moved");
+    check_eq(calls[1].report[8], KB_MODE_PANE, "copy mode closed: STATE says PANE");
+
+    in_mode(KB_MODE_PANE, TMOD_NONE);
+    press(KBK_TM_TREE);
+    now_ms += KB_HOST_TIMEOUT_MS - 1;
+    host_reports(0);
+    check_eq(kb.mode, KB_MODE_TREE, "a tree not seen open, 1499 ms on: TREE kept");
+
+    in_mode(KB_MODE_PANE, TMOD_NONE);
+    press(KBK_TM_TREE);
+    now_ms += KB_HOST_TIMEOUT_MS;
+    host_reports(0);
+    check_eq(kb.mode, KB_MODE_PANE, "a tree never seen open, 1500 ms on: PANE");
+
+    in_mode(KB_MODE_PANE, TMOD_NONE);
+    press(KBK_TM_WITHIN);
+    now_ms += KB_HOST_TIMEOUT_MS;
+    host_reports(0);
+    check_eq(kb.mode, KB_MODE_PANE, "copy mode never seen open, 1500 ms on: PANE");
+
+    in_mode(KB_MODE_PANE, TMOD_NONE);
+    press(KBK_TM_TREE);
+    host_reports(KB_TMUX_OTHER_MODE);
+    enter_and_reply(KBK_TM_WITHIN, KB_TMUX_OTHER_MODE);
+    host_reports(0);
+    check_eq(kb.mode, KB_MODE_WITHIN, "TREE to WITHIN: the tree still showing is not copy mode");
+
+    // Unchanged by any of the above.
+    in_mode(KB_MODE_PANE, TMOD_NONE);
+    press(KBK_TM_TREE);
+    host_reports(KB_TMUX_OTHER_MODE);
+    kb_context_t c  = steady();
+    c.seq           = ++host_seq;
+    c.intent_status = KB_INTENT_PENDING;
+    receive(&c);
+    check_eq(kb.mode, KB_MODE_TREE, "an intent in flight explains it: TREE kept");
+
+    in_mode(KB_MODE_PANE, TMOD_NONE);
+    kb.ctx.program    = KB_PROGRAM_CLAUDE;
+    kb.ctx.transcript = KB_TRANSCRIPT_OPEN;
+    press(KBK_TM_WITHIN);
+    now_ms += KB_HOST_TIMEOUT_MS;
+    c            = steady();
+    c.seq        = ++host_seq;
+    c.program    = KB_PROGRAM_CLAUDE;
+    c.transcript = KB_TRANSCRIPT_OPEN;
+    receive(&c);
+    check_eq(kb.mode, KB_MODE_WITHIN, "WITHIN in Claude's viewer: kept");
 }
 
 int main(void) {

@@ -157,13 +157,14 @@
     {
       "file": "interactions/pane-closed.bin",
       "name": "the tree closed behind the keyboard",
-      "why": "The host reports no mode open while the keyboard is in TREE with nothing in flight, so the keyboard adopts PANE.",
+      "why": "The host reports the tree open, then no mode open, while the keyboard is in TREE with nothing in flight, so the keyboard adopts PANE.",
       "steps": [
         { "do": "connect" },
         { "do": "context", "fields": { "seq": 1, "ack": 1, "os": 2, "program": 1, "tmuxBits": 3, "transcript": 0, "phase": 0, "perm": 0, "intentNonce": 0, "intentStatus": 0, "window": 0, "pane": 0, "label": "" } },
         { "do": "press", "key": "TMUX_ON" },
         { "do": "press", "key": "TM_TREE" },
-        { "do": "context", "fields": { "seq": 2, "ack": 4, "os": 2, "program": 1, "tmuxBits": 3, "transcript": 0, "phase": 0, "perm": 0, "intentNonce": 0, "intentStatus": 0, "window": 0, "pane": 0, "label": "" } }
+        { "do": "context", "fields": { "seq": 2, "ack": 4, "os": 2, "program": 1, "tmuxBits": 11, "transcript": 0, "phase": 0, "perm": 0, "intentNonce": 0, "intentStatus": 0, "window": 0, "pane": 0, "label": "" } },
+        { "do": "context", "fields": { "seq": 3, "ack": 4, "os": 2, "program": 1, "tmuxBits": 3, "transcript": 0, "phase": 0, "perm": 0, "intentNonce": 0, "intentStatus": 0, "window": 0, "pane": 0, "label": "" } }
       ],
       "sent": [
         { "step": 0, "report": 0, "fields": { "type": 1, "seq": 1, "ack": 255, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 0, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": false, "event": 0, "eventArg": 0 } },
@@ -171,7 +172,7 @@
         { "step": 3, "report": 2, "fields": { "type": 2, "seq": 3, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 2, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } },
         { "step": 3, "tmuxKey": "F21" },
         { "step": 3, "report": 3, "fields": { "type": 2, "seq": 4, "ack": 1, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 2, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 1 }, "key": { "row": 9, "shift": false, "ctrl": false, "alt": false } },
-        { "step": 4, "report": 4, "fields": { "type": 2, "seq": 5, "ack": 2, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } }
+        { "step": 5, "report": 4, "fields": { "type": 2, "seq": 5, "ack": 3, "intent": 0, "intentArg": 0, "nonce": 0, "mode": 4, "heldModifier": 0, "baseLayer": 2, "osOverride": false, "hostAlive": true, "event": 0, "eventArg": 0 } }
       ]
     },
     {

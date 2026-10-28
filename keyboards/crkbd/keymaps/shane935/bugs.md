@@ -29,8 +29,8 @@ drive it by moving its clock.
 
 ## A base layer the host moved is not reported until the next keypress
 
-STATE is sent "on every change to an owned field", and byte 10, the base layer,
-is one the keyboard owns. `kb_apply_os` runs on every CONTEXT and can move the
+STATE is meant to go out on every change to a field the keyboard owns, and byte
+10, the base layer, is one of them. `kb_apply_os` runs on every CONTEXT and can move the
 layer, but nothing after it sends STATE: the only STATE leaving
 `kb_receive` is the stale-ack resend, and a steady-state CONTEXT acks the
 current seq, so that does not fire.
@@ -44,8 +44,8 @@ carries the new layer anyway.
 
 Minor, because the host supplied the `os` that moved the layer and
 `kb_os_wanted` is pure, so a host deriving the value rather than reading byte 10
-never sees it. Only a host that mirrors the byte — which is what the protocol
-tells it to do — lags.
+never sees it. Only a host that mirrors the byte — which is what keyboard-daemon
+does for the status line — lags.
 
 **Fix:** return from `kb_apply_os` whether it moved the layer, and send STATE for
 it in `kb_receive`. The caller has to do that rather than `kb_apply_os` itself,

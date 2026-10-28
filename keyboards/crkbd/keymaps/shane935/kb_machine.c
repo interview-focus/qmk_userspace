@@ -38,7 +38,9 @@ void kb_apply_os(void) {
 
 void kb_set_mode(uint8_t mode) {
     kb_io_set_mode_layers(mode);
-    kb.mode = mode;
+    kb.mode            = mode;
+    kb.mode_entered_ms = kb_io_now_ms();
+    kb.mode_seen_open  = false;
     // The thumb modifiers belong to the mode they were pressed in, so WITHIN's
     // WORD can never survive into PANE.
     kb.mod = TMOD_NONE;
@@ -97,8 +99,15 @@ void kb_receive(const uint8_t *data, uint8_t length) {
     // The safety net, not a normal path: the world moved without the keyboard
     // -- a pane closed, a program exited -- so the host is right and the
     // keyboard adopts PANE. kb_set_mode sends the corrected state itself.
+    // Only the mode's own bit counts as seen, so a tree still showing on the
+    // way from TREE to WITHIN is not copy mode.
     bool claims_mode = kb.mode == KB_MODE_TREE || (kb.mode == KB_MODE_WITHIN && kb_within_now() == WT_COPY);
-    if (kb_adopt_pane(&kb.ctx, claims_mode)) {
+    uint8_t own_bit  = kb.mode == KB_MODE_TREE ? KB_TMUX_OTHER_MODE : kb.mode == KB_MODE_WITHIN ? KB_TMUX_COPY_MODE : 0;
+    if (kb.ctx.tmux_bits & own_bit) {
+        kb.mode_seen_open = true;
+    }
+    bool host_had_time = kb.mode_seen_open || (uint32_t)(kb.ctx_last_ms - kb.mode_entered_ms) >= KB_HOST_TIMEOUT_MS;
+    if (host_had_time && kb_adopt_pane(&kb.ctx, claims_mode)) {
         kb_set_mode(KB_MODE_PANE);
         return;
     }
@@ -125,8 +134,9 @@ void kb_receive(const uint8_t *data, uint8_t length) {
     }
 }
 
-// Every tmux action is one row of the key table in docs/00-protocol.md: a
-// single root-table key, which tmux runs the instant it arrives. The commands
+// Every tmux action is one row of the key table in keyboard-daemon's
+// src/keytable.ts: a single root-table key, which tmux runs the instant it
+// arrives. The commands
 // themselves -- and so the directory a new pane opens in, and every other flag
 // -- live in the generated tmux.conf, not here. mods names the row, so S-F19 in
 // the table is tmux_fkey(KC_F19, MOD_LSFT) here.
