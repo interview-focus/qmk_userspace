@@ -15,6 +15,11 @@
 #
 # It also checks contract/to-daemon/ still matches what kb_state_report emits.
 # `test/run.sh record` rewrites it, which is deliberate: see record_contract.c.
+#
+# With KEYBOARD_DAEMON pointing at a checkout of keyboard-daemon, it also checks
+# kb_context_parse reads the daemon's contract/to-keyboard/ back as the daemon
+# says it should. That needs node, wasm or not. contract/to-keyboard.verified
+# notes which daemon contract last passed; `record` updates it.
 set -e
 here=$(dirname "$0")
 root="$here/../../../../.."
@@ -99,6 +104,29 @@ elif diff -r "$contract" "$out"; then
 else
     echo "contract: to-daemon is stale; run test/run.sh record and explain the diff"
     status=1
+fi
+
+daemon_contract="${KEYBOARD_DAEMON:+$KEYBOARD_DAEMON/contract/to-keyboard}"
+verified="$here/../contract/to-keyboard.verified"
+if [ -z "$daemon_contract" ]; then
+    last=$(sed -n 's/.*"daemonCommit": "\(.*\)".*/\1/p' "$verified" 2>/dev/null || true)
+    echo "contract: to-keyboard skipped, last passed against daemon ${last:-nothing}; set KEYBOARD_DAEMON to a keyboard-daemon checkout"
+else
+    read_out="$tmp/to-keyboard.json"
+    if [ -n "$WASI_SDK" ]; then
+        # shellcheck disable=SC2086
+        "$WASI_SDK/bin/clang" --target=wasm32-wasip1 $warn -o "$tmp/read_contract.wasm" "$here/read_contract.c" "$here/../kb_protocol.c"
+        node --no-warnings "$tmp/run.mjs" "$tmp/read_contract.wasm" "$daemon_contract" > "$read_out" || status=1
+    else
+        # shellcheck disable=SC2086
+        "${CC:-cc}" $warn -o "$tmp/read_contract" "$here/read_contract.c" "$here/../kb_protocol.c"
+        "$tmp/read_contract" "$daemon_contract" > "$read_out" || status=1
+    fi
+    if node "$here/check_contract.mjs" "$daemon_contract" "$read_out" "$verified" "$1"; then
+        echo "contract: to-keyboard reads back as the daemon recorded it"
+    else
+        status=1
+    fi
 fi
 
 exit $status

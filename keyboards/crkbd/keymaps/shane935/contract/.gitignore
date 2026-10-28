@@ -1,0 +1,2 @@
+# The reports are the contract, not build output.
+!*.bin

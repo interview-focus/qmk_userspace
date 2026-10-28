@@ -60,6 +60,14 @@ There is no C compiler in the agent sandbox. Point `WASI_SDK` at an unpacked
 wasi-sdk and `run.sh` builds for wasm32-wasip1 and runs under node instead; the
 fetch command is in the script's header.
 
+`contract/` is the agreement with keyboard-daemon. `to-daemon/` is what this
+keyboard sends, and `run.sh` fails if it no longer matches the encoder;
+`run.sh record` rewrites it. Set `KEYBOARD_DAEMON` to a keyboard-daemon
+checkout and `run.sh` also parses that repo's `contract/to-keyboard/`;
+`to-keyboard.verified` notes which daemon contract last passed, and `record`
+updates it. QMK's root `.gitignore` drops `*.bin`, and `contract/.gitignore`
+is what keeps the reports committed.
+
 `keymap.c` itself only compiles under QMK, because `quantum/keymap_introspection.c`
 is the translation unit that includes it.
 
