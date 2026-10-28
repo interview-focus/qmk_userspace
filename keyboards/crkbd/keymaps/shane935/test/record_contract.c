@@ -260,8 +260,11 @@ static const interaction_t interactions[] = {
     {
         .file  = "pane-closed",
         .name  = "the tree closed behind the keyboard",
-        .why   = "The host reports no mode open while the keyboard is in TREE with nothing in flight, so the keyboard adopts PANE.",
-        .steps = {CONNECT, CONTEXT(SHELL), PRESS(TMUX_ON), PRESS(TM_TREE), CONTEXT(SHELL)},
+        .why   = "The host reports the tree open, then no mode open, while the keyboard is in TREE with nothing in flight, so the "
+                 "keyboard adopts PANE.",
+        .steps = {CONNECT, CONTEXT(SHELL), PRESS(TMUX_ON), PRESS(TM_TREE),
+                  CONTEXT(.os = KB_OS_MAC, .program = KB_PROGRAM_SHELL, .tmux_bits = KB_TMUX_PRESENT | KB_TMUX_FOCUSED | KB_TMUX_OTHER_MODE),
+                  CONTEXT(SHELL)},
     },
     {
         .file  = "host-lost",
